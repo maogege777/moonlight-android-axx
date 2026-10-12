@@ -43,15 +43,18 @@ jobs:
             ls -R "$ANDROID_HOME" || true
             exit 1
           fi
-          echo "SDKMANAGER=$CAND" | tee "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" | tee "$GITHUB_ENV"
+          echo "SDKMANAGER=$CAND"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME"
+          # 必须用 >> 追加：tee / > 会截断 $GITHUB_ENV，把前面写入的变量全部抹掉
+          echo "SDKMANAGER=$CAND" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
 
       - name: Install required SDK components
         # 版本必须与 app/build.gradle 的 compileSdk / ndkVersion 逐字对应
         run: |
           yes | "$SDKMANAGER" --licenses > /dev/null || true
           "$SDKMANAGER" --install "platform-tools" "build-tools;34.0.0" "platforms;android-34" "ndk;27.0.12077973"
-          "$SDKMANAGER" --list_installed | grep -E 'platforms;android-34|ndk;27|build-tools;34'
+          "$SDKMANAGER" --list_installed 2>/dev/null | grep -E 'platforms;android-34|ndk;27|build-tools;34' || true
 
       - name: Cache Gradle
         uses: actions/cache@v4
