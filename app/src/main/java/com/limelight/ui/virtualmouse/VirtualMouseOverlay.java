@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 
 import com.limelight.R;
+import com.limelight.binding.input.touch.MultitouchOffsetFix;
 
 /**
  * Full-screen, draw-only virtual mouse overlay. Empty space returns false on ACTION_DOWN so the
@@ -305,6 +306,19 @@ public final class VirtualMouseOverlay extends View implements VirtualMouseContr
             return false;
         }
 
+        // 三星 Game Booster 降分辨率时，跨 View 的多指手势派发到本 View 的坐标会带固定偏移
+        MotionEvent correctedEvent = MultitouchOffsetFix.obtainCorrectedEvent(this, event);
+        if (correctedEvent != null) {
+            try {
+                return handleOverlayTouchEvent(correctedEvent);
+            } finally {
+                correctedEvent.recycle();
+            }
+        }
+        return handleOverlayTouchEvent(event);
+    }
+
+    private boolean handleOverlayTouchEvent(MotionEvent event) {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_POINTER_DOWN: {

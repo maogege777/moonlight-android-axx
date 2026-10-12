@@ -17,6 +17,7 @@ import android.widget.TextView;
 
 import com.limelight.Game;
 import com.limelight.R;
+import com.limelight.binding.input.touch.MultitouchOffsetFix;
 import com.limelight.preferences.PreferenceConfiguration;
 import com.limelight.ui.AppDialog;
 
@@ -242,13 +243,27 @@ public abstract class VirtualControllerElement extends View {
         }
 
         if (virtualController.getControllerMode() == VirtualController.ControllerMode.Active) {
+            // 三星 Game Booster 降分辨率时，跨 View 的多指手势会被派发到本控件的坐标按缩放后的
+            // 坐标系报告。这里在基类一次性构造「已修正坐标」的事件副本，所有子类（DigitalButton /
+            // AnalogStick / DigitalPad 等）自动拿到正确坐标，无需逐个改子类。
+            MotionEvent correctedEvent = MultitouchOffsetFix.obtainCorrectedEvent(this, event);
+            if (correctedEvent != null) {
+                try {
+                    return onElementTouchEvent(correctedEvent);
+                } finally {
+                    // obtain 出来的事件必须 recycle，否则泄漏
+                    correctedEvent.recycle();
+                }
+            }
             return onElementTouchEvent(event);
         }
 
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN: {
-                position_pressed_x = event.getX();
-                position_pressed_y = event.getY();
+                // 配置模式（拖动 / 缩放按钮）的按下坐标同样要走修正入口，
+                // 否则在三星上拖按钮会跳。
+                position_pressed_x = MultitouchOffsetFix.getX(this, event, 0);
+                position_pressed_y = MultitouchOffsetFix.getY(this, event, 0);
                 startSize_x = getWidth();
                 startSize_y = getHeight();
 
@@ -261,21 +276,24 @@ public abstract class VirtualControllerElement extends View {
                 return true;
             }
             case MotionEvent.ACTION_MOVE: {
+                float moveX = MultitouchOffsetFix.getX(this, event, 0);
+                float moveY = MultitouchOffsetFix.getY(this, event, 0);
+
                 switch (currentMode) {
                     case Move: {
                         moveElement(
                                 (int) position_pressed_x,
                                 (int) position_pressed_y,
-                                (int) event.getX(),
-                                (int) event.getY());
+                                (int) moveX,
+                                (int) moveY);
                         break;
                     }
                     case Resize: {
                         resizeElement(
                                 (int) position_pressed_x,
                                 (int) position_pressed_y,
-                                (int) event.getX(),
-                                (int) event.getY());
+                                (int) moveX,
+                                (int) moveY);
                         break;
                     }
                     case Normal: {

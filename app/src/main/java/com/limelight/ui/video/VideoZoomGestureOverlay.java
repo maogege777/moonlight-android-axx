@@ -9,6 +9,7 @@ import android.view.ScaleGestureDetector;
 import android.view.View;
 
 import com.limelight.R;
+import com.limelight.binding.input.touch.MultitouchOffsetFix;
 
 /**
  * Transparent touch layer used only while the session-local video zoom mode is enabled.
@@ -108,6 +109,22 @@ public final class VideoZoomGestureOverlay extends View {
         // Only finger touches control zoom. Mice and pens continue to the stream.
         if (!isTouchscreenFingerEvent(event)) {
             return false;
+        }
+
+        // 三星 Game Booster 降分辨率时，被拆分派发到本 View 的坐标会带固定偏移
+        MotionEvent correctedEvent = MultitouchOffsetFix.obtainCorrectedEvent(this, event);
+        if (correctedEvent != null) {
+            try {
+                scaleGestureDetector.onTouchEvent(correctedEvent);
+                gestureDetector.onTouchEvent(correctedEvent);
+                if (correctedEvent.getActionMasked() == MotionEvent.ACTION_CANCEL
+                        || correctedEvent.getActionMasked() == MotionEvent.ACTION_UP) {
+                    scaling = false;
+                }
+            } finally {
+                correctedEvent.recycle();
+            }
+            return true;
         }
 
         scaleGestureDetector.onTouchEvent(event);

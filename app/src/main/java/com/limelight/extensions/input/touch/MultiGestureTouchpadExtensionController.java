@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
+import com.limelight.binding.input.touch.MultitouchOffsetFix;
 import com.limelight.nvstream.NvConnection;
 import com.limelight.nvstream.input.MouseButtonPacket;
 import com.limelight.preferences.PreferenceConfiguration;
@@ -105,8 +106,9 @@ public final class MultiGestureTouchpadExtensionController
         currentSourceView = sourceView != null ? sourceView : coordinateView;
         int coordinateCount = Math.min(event.getPointerCount(), 2);
         for (int i = 0; i < coordinateCount; i++) {
-            pointerX[i] = event.getX(i);
-            pointerY[i] = event.getY(i);
+            // 三星 Game Booster 降分辨率时，被拆分派发到本 View 的坐标仍按缩放后的坐标系报告
+            pointerX[i] = MultitouchOffsetFix.getX(currentSourceView, event, i);
+            pointerY[i] = MultitouchOffsetFix.getY(currentSourceView, event, i);
         }
         return gestureContext.onTouchEvent(
                 action,

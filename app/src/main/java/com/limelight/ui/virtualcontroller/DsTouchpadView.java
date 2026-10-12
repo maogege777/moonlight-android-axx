@@ -14,6 +14,8 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewParent;
 
+import com.limelight.binding.input.touch.MultitouchOffsetFix;
+
 /**
  * A two-finger on-screen touch surface for the player-one virtual DS controller.
  */
@@ -125,6 +127,20 @@ public final class DsTouchpadView extends View {
             return false;
         }
 
+        // 三星 Game Booster 降分辨率时，若本手势被拆分到本 View 与画面 View，
+        // 派发到这里的坐标会带固定偏移。这里统一换成已修正的事件副本。
+        MotionEvent correctedEvent = MultitouchOffsetFix.obtainCorrectedEvent(this, event);
+        if (correctedEvent != null) {
+            try {
+                return handleTouchEvent(correctedEvent);
+            } finally {
+                correctedEvent.recycle();
+            }
+        }
+        return handleTouchEvent(event);
+    }
+
+    private boolean handleTouchEvent(MotionEvent event) {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_POINTER_DOWN:

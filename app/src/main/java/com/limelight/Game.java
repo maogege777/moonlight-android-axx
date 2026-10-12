@@ -11,6 +11,7 @@ import com.limelight.binding.input.capture.InputCaptureManager;
 import com.limelight.binding.input.capture.InputCaptureProvider;
 import com.limelight.binding.input.touch.AbsoluteTouchContext;
 import com.limelight.binding.input.touch.AbsoluteTouchSwitchContext;
+import com.limelight.binding.input.touch.MultitouchOffsetFix;
 import com.limelight.binding.input.touch.RelativeTouchContext;
 import com.limelight.binding.input.driver.UsbDriverService;
 import com.limelight.binding.input.evdev.EvdevListener;
@@ -474,6 +475,10 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         super.onCreate(savedInstanceState);
 
         instance=this;
+
+        // 三星 Game Booster 动态分辨率缩放会导致多指跨 View 时坐标偏移，
+        // 这里测量缩放因子供 MultitouchOffsetFix 使用
+        MultitouchOffsetFix.updateTouchScale(this);
 
         UiHelper.setLocale(this);
 
@@ -1619,6 +1624,9 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
+        // 旋转/尺寸变化后缩放因子会变，必须重新测量
+        MultitouchOffsetFix.updateTouchScale(this);
+
         cancelDsTouchpadDrag();
         releaseDsTouchpadInput();
         if (virtualMouseOverlay != null) {
@@ -2907,7 +2915,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     private Map<String,SensitivityBean> sensitivityMap=new HashMap<>();
 
     //修改移动的触控灵敏度（通过修改移动的距离实现） 默认使用右半边屏幕的时候开启
-    private float[] getStreamViewRelativeSensitivityXY(MotionEvent event,float normalizedX,float normalizedY,int pointerIndex){
+    private float[] getStreamViewRelativeSensitivityXY(View view, MotionEvent event, float normalizedX, float normalizedY, int pointerIndex){
         float[] normalized=new float[2];
         normalized[0]=normalizedX;
         normalized[1]=normalizedY;
@@ -2955,8 +2963,8 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
                 }
             }
-            bean.setLastAbsoluteX(event.getX(pointerIndex));
-            bean.setLastAbsoluteY(event.getY(pointerIndex));
+            bean.setLastAbsoluteX(MultitouchOffsetFix.getX(view, event, pointerIndex));
+            bean.setLastAbsoluteY(MultitouchOffsetFix.getY(view, event, pointerIndex));
             bean.setLastRelativelyX(normalizedX);
             bean.setLastRelativelyY(normalizedY);
             sensitivityMap.put(String.valueOf(event.getPointerId(pointerIndex)),bean);
@@ -2995,11 +3003,11 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     }
 
     private float[] getStreamViewRelativeNormalizedXY(View view, MotionEvent event, int pointerIndex,boolean isTouch) {
-        float normalizedX = event.getX(pointerIndex);
-        float normalizedY = event.getY(pointerIndex);
+        float normalizedX = MultitouchOffsetFix.getX(view, event, pointerIndex);
+        float normalizedY = MultitouchOffsetFix.getY(view, event, pointerIndex);
         //开启自定义修改触控灵敏度 并且 数值不为100
         if(isTouch&&prefConfig.enableTouchSensitivity&&(prefConfig.touchSensitivityX !=100||prefConfig.touchSensitivityY!=100)){
-            float[] normalized=getStreamViewRelativeSensitivityXY(event,normalizedX,normalizedY,pointerIndex);
+            float[] normalized=getStreamViewRelativeSensitivityXY(view,event,normalizedX,normalizedY,pointerIndex);
             normalizedX=normalized[0];
             normalizedY=normalized[1];
         }
@@ -3090,14 +3098,14 @@ public class Game extends Activity implements SurfaceHolder.Callback,
             case MotionEvent.ACTION_HOVER_ENTER:
             case MotionEvent.ACTION_HOVER_MOVE:
             case MotionEvent.ACTION_HOVER_EXIT:
-                contactAreaMajor = event.getToolMajor(pointerIndex);
-                contactAreaMinor = event.getToolMinor(pointerIndex);
+                contactAreaMajor = MultitouchOffsetFix.getSize(event, event.getToolMajor(pointerIndex));
+                contactAreaMinor = MultitouchOffsetFix.getSize(event, event.getToolMinor(pointerIndex));
                 break;
 
             // Other events report contact area
             default:
-                contactAreaMajor = event.getTouchMajor(pointerIndex);
-                contactAreaMinor = event.getTouchMinor(pointerIndex);
+                contactAreaMajor = MultitouchOffsetFix.getSize(event, event.getTouchMajor(pointerIndex));
+                contactAreaMinor = MultitouchOffsetFix.getSize(event, event.getTouchMinor(pointerIndex));
                 break;
         }
 
@@ -3477,18 +3485,21 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
                 // Handle stylus presses
                 if (event.getPointerCount() == 1 && event.getActionIndex() == 0) {
+                    float stylusX = MultitouchOffsetFix.getX(view, event, 0);
+                    float stylusY = MultitouchOffsetFix.getY(view, event, 0);
+
                     if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
                         if (event.getToolType(0) == MotionEvent.TOOL_TYPE_STYLUS) {
                             lastAbsTouchDownTime = event.getEventTime();
-                            lastAbsTouchDownX = event.getX(0);
-                            lastAbsTouchDownY = event.getY(0);
+                            lastAbsTouchDownX = stylusX;
+                            lastAbsTouchDownY = stylusY;
 
                             // Stylus is left click
                             conn.sendMouseButtonDown(MouseButtonPacket.BUTTON_LEFT);
                         } else if (event.getToolType(0) == MotionEvent.TOOL_TYPE_ERASER) {
                             lastAbsTouchDownTime = event.getEventTime();
-                            lastAbsTouchDownX = event.getX(0);
-                            lastAbsTouchDownY = event.getY(0);
+                            lastAbsTouchDownX = stylusX;
+                            lastAbsTouchDownY = stylusY;
 
                             // Eraser is right click
                             conn.sendMouseButtonDown(MouseButtonPacket.BUTTON_RIGHT);
@@ -3497,15 +3508,15 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                     else if (event.getActionMasked() == MotionEvent.ACTION_UP || event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
                         if (event.getToolType(0) == MotionEvent.TOOL_TYPE_STYLUS) {
                             lastAbsTouchUpTime = event.getEventTime();
-                            lastAbsTouchUpX = event.getX(0);
-                            lastAbsTouchUpY = event.getY(0);
+                            lastAbsTouchUpX = stylusX;
+                            lastAbsTouchUpY = stylusY;
 
                             // Stylus is left click
                             conn.sendMouseButtonUp(MouseButtonPacket.BUTTON_LEFT);
                         } else if (event.getToolType(0) == MotionEvent.TOOL_TYPE_ERASER) {
                             lastAbsTouchUpTime = event.getEventTime();
-                            lastAbsTouchUpX = event.getX(0);
-                            lastAbsTouchUpY = event.getY(0);
+                            lastAbsTouchUpX = stylusX;
+                            lastAbsTouchUpY = stylusY;
 
                             // Eraser is right click
                             conn.sendMouseButtonUp(MouseButtonPacket.BUTTON_RIGHT);
@@ -3598,7 +3609,9 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
                 int actionIndex = event.getActionIndex();
 
-                getTouchContextCoordinates(view, event.getX(actionIndex), event.getY(actionIndex),
+                getTouchContextCoordinates(view,
+                        MultitouchOffsetFix.getX(view, event, actionIndex),
+                        MultitouchOffsetFix.getY(view, event, actionIndex),
                         xOffset, yOffset, videoZoomInputPoint);
                 int eventX = (int) videoZoomInputPoint.x;
                 int eventY = (int) videoZoomInputPoint.y;
@@ -3673,7 +3686,10 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                     }
                     if (actionIndex == 0 && event.getPointerCount() > 1 && !context.isCancelled()) {
                         // The original secondary touch now becomes primary
-                        getTouchContextCoordinates(view, event.getX(1), event.getY(1),
+                        // NB: 指针索引重排后的这一处也必须修正，这是最容易漏的一处
+                        getTouchContextCoordinates(view,
+                                MultitouchOffsetFix.getX(view, event, 1),
+                                MultitouchOffsetFix.getY(view, event, 1),
                                 xOffset, yOffset, videoZoomInputPoint);
                         context.touchDownEvent(
                                 (int) videoZoomInputPoint.x,
@@ -3691,8 +3707,10 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                             if (aTouchContextMap.getActionIndex() < event.getPointerCount())
                             {
                                 getTouchContextCoordinates(view,
-                                        event.getHistoricalX(aTouchContextMap.getActionIndex(), i),
-                                        event.getHistoricalY(aTouchContextMap.getActionIndex(), i),
+                                        MultitouchOffsetFix.getHistoricalX(view, event,
+                                                aTouchContextMap.getActionIndex(), i),
+                                        MultitouchOffsetFix.getHistoricalY(view, event,
+                                                aTouchContextMap.getActionIndex(), i),
                                         xOffset, yOffset, videoZoomInputPoint);
                                 aTouchContextMap.touchMoveEvent(
                                         (int) videoZoomInputPoint.x,
@@ -3707,8 +3725,10 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                         if (aTouchContextMap.getActionIndex() < event.getPointerCount())
                         {
                             getTouchContextCoordinates(view,
-                                    event.getX(aTouchContextMap.getActionIndex()),
-                                    event.getY(aTouchContextMap.getActionIndex()),
+                                    MultitouchOffsetFix.getX(view, event,
+                                            aTouchContextMap.getActionIndex()),
+                                    MultitouchOffsetFix.getY(view, event,
+                                            aTouchContextMap.getActionIndex()),
                                     xOffset, yOffset, videoZoomInputPoint);
                             aTouchContextMap.touchMoveEvent(
                                     (int) videoZoomInputPoint.x,
@@ -3746,21 +3766,23 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         // X and Y are already relative to the provided view object
         float eventX, eventY;
 
-        if (mapPointThroughVideoZoomToStreamPixels(touchedView, event.getX(0), event.getY(0),
+        if (mapPointThroughVideoZoomToStreamPixels(touchedView,
+                MultitouchOffsetFix.getX(touchedView, event, 0),
+                MultitouchOffsetFix.getY(touchedView, event, 0),
                 videoZoomInputPoint)) {
             eventX = videoZoomInputPoint.x;
             eventY = videoZoomInputPoint.y;
         }
         // For our StreamView itself, we can use the coordinates unmodified.
         else if (touchedView == streamView) {
-            eventX = event.getX(0);
-            eventY = event.getY(0);
+            eventX = MultitouchOffsetFix.getX(streamView, event, 0);
+            eventY = MultitouchOffsetFix.getY(streamView, event, 0);
         }
         else {
             // For the containing background view, we must subtract the origin
             // of the StreamView to get video-relative coordinates.
-            eventX = event.getX(0) - streamView.getX();
-            eventY = event.getY(0) - streamView.getY();
+            eventX = MultitouchOffsetFix.getAbsoluteX(null, event, 0) - streamView.getX();
+            eventY = MultitouchOffsetFix.getAbsoluteY(null, event, 0) - streamView.getY();
         }
 
         if (event.getPointerCount() == 1 && event.getActionIndex() == 0 &&
@@ -3803,6 +3825,14 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     @Override
     public boolean onGenericMotion(View view, MotionEvent event) {
         return handleMotionEvent(view, event);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        // 记录本次手势的真实总指针数，供 MultitouchOffsetFix 判断手势是否被拆分到不同 View。
+        // 必须在事件继续向下分发之前记录。
+        MultitouchOffsetFix.setGlobalPointerCount(event);
+        return super.dispatchTouchEvent(event);
     }
 
     @SuppressLint("ClickableViewAccessibility")
