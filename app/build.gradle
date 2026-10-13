@@ -31,6 +31,20 @@ android {
 
     flavorDimensions.add("root")
 
+    // EXTENSION DEVELOPMENT [EXT-DEBUG-SIGNING] [ADDED] BEGIN
+    // GitHub Actions 每次在临时 runner 上构建，Android 自动生成的 debug.keystore 每次都不同，
+    // 导致新出的 debug APK 无法覆盖安装旧版（提示"软件包与现有软件包存在冲突"）。
+    // 改用仓库内固定的 app/debug.keystore，所有 Actions 产物签名一致，可反复覆盖安装。
+    signingConfigs {
+        moonlightDebug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'moonlight'
+            keyPassword 'android'
+        }
+    }
+    // EXTENSION DEVELOPMENT [EXT-DEBUG-SIGNING] [ADDED] END
+
     buildFeatures {
         buildConfig = true
     }
@@ -95,6 +109,10 @@ android {
 
     buildTypes {
         debug {
+            // EXTENSION DEVELOPMENT [EXT-DEBUG-SIGNING] [ADDED] BEGIN
+            // 使用仓库固定的签名，保证 Actions 每次产物可互相覆盖安装
+            signingConfig signingConfigs.moonlightDebug
+            // EXTENSION DEVELOPMENT [EXT-DEBUG-SIGNING] [ADDED] END
             applicationIdSuffix ".debug"
             resValue "string", "app_label", "月光"
             resValue "string", "app_label_root", "DR·月光"
