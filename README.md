@@ -8,5 +8,5 @@
 
 --------------------------
 
-# 月光·阿西西原版
+# 月光·阿西西原仓库
 https://github.com/Axixi2233/moonlight-android/releases
