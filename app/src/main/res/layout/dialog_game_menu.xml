@@ -285,6 +285,9 @@
             android:layout_margin="5dp"
             android:orientation="horizontal">
 
+            <!-- EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN -->
+            <!-- 原「显示器」入口改名为「更多」并移到本行最后；显示器1~3 从「操作」子面板上移到此处；
+                 麦克风 / 虚拟鼠标 / 手柄键鼠 移入「更多」子面板。 -->
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -296,7 +299,7 @@
                 android:gravity="center"
                 android:padding="4dp"
                 android:id="@+id/btn_display_1"
-                android:text="显示器"
+                android:text="显示器1"
                 android:textSize="11dp" />
 
             <Button
@@ -306,38 +309,55 @@
                 android:layout_weight="1"
                 android:background="@drawable/ic_game_menu_btn_selector"
                 android:drawablePadding="4dp"
-                android:drawableTop="@drawable/ic_axi_mic"
+                android:drawableTop="@drawable/ic_axi_switch_screen"
                 android:gravity="center"
                 android:padding="4dp"
-                android:id="@+id/btn_mic"
-                android:text="麦克风"
+                android:id="@+id/btn_display_2"
+                android:text="显示器2"
+                android:textSize="11dp" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginRight="5dp"
+                android:layout_weight="1"
+                android:background="@drawable/ic_game_menu_btn_selector"
+                android:drawablePadding="4dp"
+                android:drawableTop="@drawable/ic_axi_switch_screen"
+                android:gravity="center"
+                android:padding="4dp"
+                android:id="@+id/btn_display_3"
+                android:text="显示器3"
                 android:textSize="11dp" />
 
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:layout_marginRight="5dp"
                 android:background="@drawable/ic_game_menu_btn_selector"
                 android:drawablePadding="4dp"
-                android:drawableTop="@drawable/ic_axi_mouse"
+                android:drawableTop="@drawable/ic_axi_app_more"
                 android:gravity="center"
                 android:padding="4dp"
-                android:id="@+id/btn_virtual_mouse"
-                android:text="@string/game_menu_enable_virtual_mouse"
-                android:textSize="10dp" />
+                android:id="@+id/btn_more"
+                android:text="更多"
+                android:textSize="11dp" />
+
+            <!-- 显示器4 按要求隐藏（注释保留，如需恢复取消注释即可）
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:background="@drawable/ic_game_menu_btn_selector"
                 android:drawablePadding="4dp"
-                android:drawableTop="@drawable/ic_axi_joystick"
+                android:drawableTop="@drawable/ic_axi_switch_screen"
                 android:gravity="center"
                 android:padding="4dp"
-                android:id="@+id/btn_gamepad_mouse"
-                android:text="@string/game_menu_gamepad_mouse"
+                android:id="@+id/btn_display_4"
+                android:text="显示器4"
                 android:textSize="11dp" />
+            -->
+            <!-- EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] END -->
 
         </LinearLayout>
 

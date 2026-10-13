@@ -24,7 +24,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:text="操作"
+            android:text="更多"
             android:id="@+id/tx_title"
             android:textColor="@android:color/white"
             android:textSize="13dp" />
@@ -67,7 +67,65 @@
 
             </LinearLayout>
 
+            <!-- EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN -->
+            <!-- 显示器1~3 已上移至主菜单第三行，显示器4 按要求注释隐藏；
+                 此处首行改为从主菜单移入的 麦克风 / 虚拟鼠标 / 手柄键鼠 开关按钮。 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_margin="5dp"
+                android:orientation="horizontal">
 
+                <Button
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginRight="5dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/ic_game_menu_btn_selector"
+                    android:drawablePadding="4dp"
+                    android:drawableTop="@drawable/ic_axi_mic"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:id="@+id/btn_mic"
+                    android:text="麦克风"
+                    android:textSize="9dp" />
+
+                <Button
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginRight="5dp"
+                    android:background="@drawable/ic_game_menu_btn_selector"
+                    android:drawablePadding="4dp"
+                    android:drawableTop="@drawable/ic_axi_mouse"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:id="@+id/btn_virtual_mouse"
+                    android:text="@string/game_menu_enable_virtual_mouse"
+                    android:textSize="10dp" />
+                <Button
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginRight="5dp"
+                    android:background="@drawable/ic_game_menu_btn_selector"
+                    android:drawablePadding="4dp"
+                    android:drawableTop="@drawable/ic_axi_joystick"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:id="@+id/btn_gamepad_mouse"
+                    android:text="@string/game_menu_gamepad_mouse"
+                    android:textSize="9dp" />
+
+                <!-- 占位空槽，保持与其余行的四列网格对齐 -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1" />
+
+            </LinearLayout>
+
+            <!-- 显示器1~4（显示器1~3 已上移至主菜单，显示器4 隐藏注释保留，如需恢复取消注释即可）
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
@@ -131,70 +189,8 @@
                     android:textSize="9dp" />
 
             </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="54dp"
-                android:layout_margin="5dp"
-                android:orientation="horizontal">
-
-                <Button
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginRight="5dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/ic_game_menu_btn_selector"
-                    android:drawablePadding="4dp"
-                    android:drawableTop="@drawable/ic_axi_logout"
-                    android:gravity="center"
-                    android:padding="4dp"
-                    android:id="@+id/btn_logout"
-                    android:text="注销"
-                    android:textSize="9dp" />
-
-                <Button
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginRight="5dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/ic_game_menu_btn_selector"
-                    android:drawablePadding="4dp"
-                    android:drawableTop="@drawable/ic_axi_shutdown"
-                    android:gravity="center"
-                    android:padding="4dp"
-                    android:id="@+id/btn_shutdown"
-                    android:text="关机"
-                    android:textSize="9dp" />
-
-                <Button
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginRight="5dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/ic_game_menu_btn_selector"
-                    android:drawablePadding="4dp"
-                    android:drawableTop="@drawable/ic_axi_sleep"
-                    android:gravity="center"
-                    android:padding="4dp"
-                    android:id="@+id/btn_sleep"
-                    android:text="睡眠"
-                    android:textSize="9dp" />
-
-                <Button
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginRight="5dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/ic_game_menu_btn_selector"
-                    android:drawablePadding="4dp"
-                    android:drawableTop="@drawable/ic_axi_reboot"
-                    android:gravity="center"
-                    android:padding="4dp"
-                    android:id="@+id/btn_reboot"
-                    android:text="重启"
-                    android:textSize="9dp" />
-
-            </LinearLayout>
+            -->
+            <!-- EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] END -->
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -325,6 +321,73 @@
 
 
             </LinearLayout>
+
+            <!-- EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN -->
+            <!-- 注销 / 关机 / 睡眠 / 重启 移至本组按钮最后，点击后需二次确认再执行。 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:layout_margin="5dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginRight="5dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/ic_game_menu_btn_selector"
+                    android:drawablePadding="4dp"
+                    android:drawableTop="@drawable/ic_axi_logout"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:id="@+id/btn_logout"
+                    android:text="注销"
+                    android:textSize="9dp" />
+
+                <Button
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginRight="5dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/ic_game_menu_btn_selector"
+                    android:drawablePadding="4dp"
+                    android:drawableTop="@drawable/ic_axi_shutdown"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:id="@+id/btn_shutdown"
+                    android:text="关机"
+                    android:textSize="9dp" />
+
+                <Button
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginRight="5dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/ic_game_menu_btn_selector"
+                    android:drawablePadding="4dp"
+                    android:drawableTop="@drawable/ic_axi_sleep"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:id="@+id/btn_sleep"
+                    android:text="睡眠"
+                    android:textSize="9dp" />
+
+                <Button
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginRight="5dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/ic_game_menu_btn_selector"
+                    android:drawablePadding="4dp"
+                    android:drawableTop="@drawable/ic_axi_reboot"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:id="@+id/btn_reboot"
+                    android:text="重启"
+                    android:textSize="9dp" />
+
+            </LinearLayout>
+            <!-- EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] END -->
 
         </LinearLayout>
 

@@ -32,19 +32,10 @@ import java.security.Key;
  */
 public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClickListener{
 
-    private void refreshMicButton() {
-        if (btn_mic != null && game != null) {
-            btn_mic.setBackgroundResource(game.micStatus == 0?R.drawable.ic_game_menu_btn_selector:R.drawable.ic_game_menu_btn_green_selector);
-        }
-    }
-
-    private void refreshGamepadMouseButton() {
-        if (btn_gamepad_mouse != null && game != null) {
-            btn_gamepad_mouse.setBackgroundResource(game.isGamepadMouseModeEnabled()
-                    ? R.drawable.ic_game_menu_btn_green_selector
-                    : R.drawable.ic_game_menu_btn_selector);
-        }
-    }
+    // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN
+    // 麦克风 / 虚拟鼠标 / 手柄键鼠 三个开关按钮已移入「更多」子面板（GameFunctionFragment），
+    // 其状态高亮刷新逻辑一并迁移，此处不再保留。
+    // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] END
 
     @Override
     public int getLayoutRes() {
@@ -57,15 +48,9 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
 
     private Button btn_v_keyboard;
 
-    private Button btn_gamepad_mouse;
-
     private Button btn_screen_move;
 
-    private Button btn_virtual_mouse;
-
     private TextView tx_title_battery;
-
-    private Button btn_mic;
 
     private Game game;
     private NvConnection conn;
@@ -76,21 +61,12 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
         btn_performance=v.findViewById(R.id.btn_performance);
         btn_game_pad=v.findViewById(R.id.btn_game_pad);
         btn_v_keyboard=v.findViewById(R.id.btn_v_keyboard);
-        btn_gamepad_mouse=v.findViewById(R.id.btn_gamepad_mouse);
         btn_screen_move=v.findViewById(R.id.btn_screen_move);
-        btn_virtual_mouse=v.findViewById(R.id.btn_virtual_mouse);
         if(game!=null){
             btn_performance.setBackgroundResource(game.prefConfig.enablePerfOverlay?R.drawable.ic_game_menu_btn_green_selector:R.drawable.ic_game_menu_btn_selector);
             btn_game_pad.setBackgroundResource(game.prefConfig.onscreenController?R.drawable.ic_game_menu_btn_green_selector:R.drawable.ic_game_menu_btn_selector);
             btn_v_keyboard.setBackgroundResource(game.prefConfig.enableKeyboard?R.drawable.ic_game_menu_btn_green_selector:R.drawable.ic_game_menu_btn_selector);
             btn_screen_move.setBackgroundResource(game.getScreenMoveZoom()?R.drawable.ic_game_menu_btn_green_selector:R.drawable.ic_game_menu_btn_selector);
-            btn_virtual_mouse.setBackgroundResource(game.isVirtualMouseEnabled()
-                    ? R.drawable.ic_game_menu_btn_green_selector
-                    : R.drawable.ic_game_menu_btn_selector);
-            btn_virtual_mouse.setText(game.isVirtualMouseEnabled()
-                    ? R.string.game_menu_disable_virtual_mouse
-                    : R.string.game_menu_enable_virtual_mouse);
-            refreshGamepadMouseButton();
         }
         v.findViewById(R.id.btn_unlink).setOnClickListener(this);
         v.findViewById(R.id.btn_exit).setOnClickListener(this);
@@ -100,7 +76,6 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
         v.findViewById(R.id.btn_v_keyboard).setOnClickListener(this);
         v.findViewById(R.id.btn_keyboard).setOnClickListener(this);
         v.findViewById(R.id.btn_screen_move).setOnClickListener(this);
-        v.findViewById(R.id.btn_gamepad_mouse).setOnClickListener(this);
         v.findViewById(R.id.bt_touch_sensitivity).setOnClickListener(this);
         v.findViewById(R.id.bt_quick_list).setOnClickListener(this);
         v.findViewById(R.id.bt_touch_list).setOnClickListener(this);
@@ -108,16 +83,19 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
         v.findViewById(R.id.btn_desktop).setOnClickListener(this);
         v.findViewById(R.id.btn_window).setOnClickListener(this);
         v.findViewById(R.id.bt_touch_sensitivity).setOnClickListener(this);
-        btn_mic=v.findViewById(R.id.btn_mic);
-        btn_mic.setOnClickListener(this);
+        // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN
+        // 显示器1~3 上移到主菜单直接发送 Ctrl+Alt+Shift+F1~F3；「更多」与原「操作」入口一致。
         v.findViewById(R.id.btn_display_1).setOnClickListener(this);
+        v.findViewById(R.id.btn_display_2).setOnClickListener(this);
+        v.findViewById(R.id.btn_display_3).setOnClickListener(this);
+        v.findViewById(R.id.btn_more).setOnClickListener(this);
+        // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] END
         v.findViewById(R.id.bt_virtual_view).setOnClickListener(this);
         v.findViewById(R.id.bt_display).setOnClickListener(this);
         v.findViewById(R.id.bt_device).setOnClickListener(this);
         v.findViewById(R.id.bt_audio_rumble).setOnClickListener(this);
         v.findViewById(R.id.bt_other_setting).setOnClickListener(this);
         v.findViewById(R.id.btn_soft_function).setOnClickListener(this);
-        btn_virtual_mouse.setOnClickListener(this);
 
         v.findViewById(R.id.btn_performance).setOnLongClickListener(new View.OnLongClickListener() {
             @Override
@@ -128,7 +106,9 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
                 return false;
             }
         });
-        refreshMicButton();
+        // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN
+        // refreshMicButton() 已随麦克风按钮迁移至 GameFunctionFragment。
+        // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] END
 //        v.findViewById(R.id.btn_soft_keyboard).setOnLongClickListener(new View.OnLongClickListener() {
 //            @Override
 //            public boolean onLongClick(View v) {
@@ -150,19 +130,35 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
 
     @Override
     public void onClick(View v) {
-        if (v.getId() == R.id.btn_virtual_mouse) {
-            if (game != null) {
-                game.toggleVirtualMouse();
+        // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN
+        // 虚拟鼠标 / 麦克风 / 手柄键鼠 的处理逻辑已移入 GameFunctionFragment（「更多」子面板）。
+        // 显示器1~3 在主菜单直接发送 Ctrl+Alt+Shift+F1~F3；「更多」与原「操作」入口一致。
+        if (v.getId() == R.id.btn_display_1) {
+            if (conn != null) {
+                sendKeys(new short[]{KeyboardTranslator.VK_LCONTROL, KeyboardTranslator.VK_LMENU, KeyboardTranslator.VK_LSHIFT, KeyboardTranslator.VK_F1});
             }
-            dismiss();
+            return;
+        }
+        if (v.getId() == R.id.btn_display_2) {
+            if (conn != null) {
+                sendKeys(new short[]{KeyboardTranslator.VK_LCONTROL, KeyboardTranslator.VK_LMENU, KeyboardTranslator.VK_LSHIFT, KeyboardTranslator.VK_F2});
+            }
+            return;
+        }
+        if (v.getId() == R.id.btn_display_3) {
+            if (conn != null) {
+                sendKeys(new short[]{KeyboardTranslator.VK_LCONTROL, KeyboardTranslator.VK_LMENU, KeyboardTranslator.VK_LSHIFT, KeyboardTranslator.VK_F3});
+            }
             return;
         }
 
-        //操作 或 显示器
-        if(v.getId()==R.id.btn_soft_function || v.getId()==R.id.btn_display_1){
+        //操作 或 更多
+        if(v.getId()==R.id.btn_soft_function || v.getId()==R.id.btn_more){
             GameFunctionFragment fragment=new GameFunctionFragment();
             fragment.setWidth(UiHelper.dpToPx(getActivity(),364));
-            fragment.setTitle("操作");
+            fragment.setTitle("更多");
+            fragment.setGame(game);
+            fragment.setConn(conn);
             fragment.setOnClick(new GameFunctionFragment.onClick() {
                 @Override
                 public void click(String title, int index) {
@@ -209,18 +205,9 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
                         case 10://Win+P
                             sendKeys(new short[]{KeyboardTranslator.VK_LWIN, KeyboardTranslator.VK_P});
                             break;
-                        case 11://显示器1
-                            sendKeys(new short[]{KeyboardTranslator.VK_LCONTROL,KeyboardTranslator.VK_LMENU, KeyboardTranslator.VK_LSHIFT, KeyboardTranslator.VK_F1});
-                            break;
-                        case 12://显示器2
-                            sendKeys(new short[]{KeyboardTranslator.VK_LCONTROL,KeyboardTranslator.VK_LMENU, KeyboardTranslator.VK_LSHIFT, KeyboardTranslator.VK_F2});
-                            break;
-                        case 13://显示器3
-                            sendKeys(new short[]{KeyboardTranslator.VK_LCONTROL,KeyboardTranslator.VK_LMENU, KeyboardTranslator.VK_LSHIFT, KeyboardTranslator.VK_F3});
-                            break;
-                        case 14://显示器4
-                            sendKeys(new short[]{KeyboardTranslator.VK_LCONTROL,KeyboardTranslator.VK_LMENU, KeyboardTranslator.VK_LSHIFT, KeyboardTranslator.VK_F4});
-                            break;
+                        // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN
+                        // 显示器1~4 已移出「更多」子面板（显示器1~3 上移至主菜单处理，显示器4 隐藏），此处不再回调。
+                        // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] END
                         case 15://HDR开关
                             sendKeys(new short[]{KeyboardTranslator.VK_LWIN, KeyboardTranslator.VK_LMENU, KeyboardTranslator.VK_B});
                             break;
@@ -316,27 +303,9 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
             return;
         }
 
-        if(v.getId()==R.id.btn_mic){
-//            if(conn!=null){
-//                sendKeys(new short[]{KeyboardTranslator.VK_LCONTROL,KeyboardTranslator.VK_LMENU, KeyboardTranslator.VK_LSHIFT, KeyboardTranslator.VK_F12});
-//            }
-            if(game!=null){
-                game.switchMic();
-                refreshMicButton();
-                btn_mic.postDelayed(this::refreshMicButton, 400);
-                btn_mic.postDelayed(this::refreshMicButton, 1200);
-            }
-            return;
-        }
-
-        if(v.getId()==R.id.btn_gamepad_mouse){
-            if (game != null) {
-                game.toggleGamepadMouseMode();
-                refreshGamepadMouseButton();
-            }
-            return;
-        }
-
+        // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN
+        // 麦克风 / 手柄键鼠 的点击处理已移入 GameFunctionFragment（「更多」子面板）。
+        // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] END
 
         if(v.getId()==R.id.bt_quick_list){
             GameListQuickFragment fragment=new GameListQuickFragment();
