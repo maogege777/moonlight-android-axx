@@ -393,11 +393,11 @@
     <string name="home_controller_system_input">Android 系统输入</string>
     <string name="home_controller_device_detail">VID %1$s · PID %2$s · %3$s</string>
     <string name="home_controller_vibration_supported">震动</string>
-    <string name="home_host_checking">正在检测</string>
+    <string name="home_host_checking">检测中</string>
     <string name="home_host_offline">已离线</string>
     <string name="home_host_wake_available">支持网络唤醒</string>
-    <string name="home_host_pair_required">等待配对</string>
-    <string name="home_host_ready">可以连接</string>
+    <string name="home_host_pair_required">待配对</string>
+    <string name="home_host_ready">可连接</string>
     <string name="home_host_running">串流正在运行</string>
     <string name="home_host_running_compact">运行中</string>
     <string name="home_host_idle">主机等待连接</string>

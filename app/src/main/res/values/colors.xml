@@ -20,6 +20,7 @@
     <color name="home_accent">#7C3AED</color>
     <color name="home_accent_bright">#9275D1</color>
     <color name="home_connected">#42D69B</color>
+    <color name="home_ready">#0A84FF</color>
     <color name="home_warning">#FFB454</color>
     <color name="home_destructive">#FF6B7A</color>
     <color name="home_border">#24FFFFFF</color>

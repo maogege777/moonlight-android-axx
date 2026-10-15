@@ -289,7 +289,7 @@ public class PcView extends Activity {
                 hostListMode = !hostListMode;
                 editor.putBoolean(PREF_HOST_LIST_MODE, hostListMode);
             }
-            else if (hostCarousel.getHostCount() > 2) {
+            else {
                 hostLandscapeListMode = !hostLandscapeListMode;
                 editor.putBoolean(
                         PREF_HOST_LANDSCAPE_LIST_MODE, hostLandscapeListMode);
@@ -1095,15 +1095,12 @@ public class PcView extends Activity {
         boolean portrait = getResources().getConfiguration().orientation
                 == Configuration.ORIENTATION_PORTRAIT;
         boolean landscapeLayoutAvailable = !portrait && hostCarousel.getHostCount() > 2;
-        boolean activeListMode = portrait
-                ? hostListMode
-                : landscapeLayoutAvailable && hostLandscapeListMode;
+        boolean activeListMode = portrait ? hostListMode : hostLandscapeListMode;
         View hostSectionTitle = findViewById(R.id.homeHostSectionTitle);
         if (hostSectionTitle != null) {
             hostSectionTitle.setVisibility(portrait ? View.VISIBLE : View.GONE);
         }
-        hostLayoutToggle.setVisibility(
-                portrait || landscapeLayoutAvailable ? View.VISIBLE : View.GONE);
+        hostLayoutToggle.setVisibility(View.VISIBLE);
         hostCarousel.setHeaderAddAvailable(portrait || landscapeLayoutAvailable);
         hostCarousel.setListMode(activeListMode);
         hostLayoutToggle.setImageResource(activeListMode

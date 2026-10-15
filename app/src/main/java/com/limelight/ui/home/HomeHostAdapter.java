@@ -350,13 +350,15 @@ final class HomeHostAdapter extends RecyclerView.Adapter<HomeHostAdapter.HostVie
             statusColor = color(holder.itemView, R.color.home_accent_bright);
         }
         else {
-            statusRes = details.runningGameId != 0
+            boolean running = details.runningGameId != 0;
+            statusRes = running
                     ? (listMode
                             ? R.string.home_host_running_compact
                             : R.string.home_host_running)
                     : R.string.home_host_ready;
             actionRes = R.string.home_host_view_apps;
-            statusColor = color(holder.itemView, R.color.home_connected);
+            statusColor = color(holder.itemView,
+                    running ? R.color.home_connected : R.color.home_ready);
         }
 
         holder.status.setText(statusRes);
