@@ -472,7 +472,9 @@ public final class HomeHostCarouselView extends RecyclerView
                 hostAdapter.getSelectedPosition() + delta,
                 hostAdapter.getItemCount() - 1));
         if (target == hostAdapter.getSelectedPosition()) {
-            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            if (!listMode) {
+                performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+            }
             return false;
         }
         setSelectionInternal(target, true, requestFocus, true);
@@ -575,7 +577,7 @@ public final class HomeHostCarouselView extends RecyclerView
         centerPosition(boundedPosition, smooth && animationsEnabled());
         applyCardTransforms();
 
-        if (changed) {
+        if (changed && !listMode) {
             performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
         }
         notifySelectionChanged(userInitiated);
