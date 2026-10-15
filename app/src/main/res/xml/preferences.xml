@@ -746,6 +746,27 @@
 
     </PreferenceCategory>
 
+    <!-- EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN -->
+    <!-- 自定义快捷键的导出 / 导入。设置面板中的位置由 SettingsCatalog 决定：
+         「界面与通用 › 自定义快捷键」，紧随「应用行为」之后。 -->
+    <PreferenceCategory android:title="自定义快捷键"
+        android:key="category_axi_quick_keys">
+
+        <Preference
+            android:key="export_quick_keys_file"
+            android:title="导出自定义快捷键"
+            android:summary="导出「操作 › 自定义快捷键」的全部内容为配置文件（含图标与排列顺序），可用于换机或分享。"
+            />
+
+        <Preference
+            android:key="import_quick_keys_file"
+            android:title="导入自定义快捷键"
+            android:summary="选择配置文件，会覆盖当前全部自定义快捷键，导入前会先提示确认。"
+            />
+
+    </PreferenceCategory>
+    <!-- EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END -->
+
     <PreferenceCategory android:title="关于"
         android:key="category_axi_about">
 

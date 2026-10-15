@@ -21,7 +21,9 @@ import com.limelight.nvstream.NvConnection;
 import com.limelight.nvstream.input.KeyboardPacket;
 import com.limelight.preferences.PreferenceConfiguration;
 import com.limelight.ui.BaseFragmentDialog.BaseGameMenuDialog;
-import com.limelight.ui.gamemenu.bean.GameMenuQuickBean;
+// EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+// GameMenuQuickBean 的引用随「快捷键」入口一并移入 GameFunctionFragment。
+// EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
 import com.limelight.utils.UiHelper;
 
 import java.security.Key;
@@ -77,18 +79,22 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
         v.findViewById(R.id.btn_keyboard).setOnClickListener(this);
         v.findViewById(R.id.btn_screen_move).setOnClickListener(this);
         v.findViewById(R.id.bt_touch_sensitivity).setOnClickListener(this);
-        v.findViewById(R.id.bt_quick_list).setOnClickListener(this);
+        // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+        // 「快捷键」入口已移除（bt_quick_list），功能融入「操作」面板的「自定义快捷键」分组。
+        // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
         v.findViewById(R.id.bt_touch_list).setOnClickListener(this);
         v.findViewById(R.id.btn_soft_keyboard).setOnClickListener(this);
         v.findViewById(R.id.btn_desktop).setOnClickListener(this);
         v.findViewById(R.id.btn_window).setOnClickListener(this);
         v.findViewById(R.id.bt_touch_sensitivity).setOnClickListener(this);
         // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN
-        // 显示器1~3 上移到主菜单直接发送 Ctrl+Alt+Shift+F1~F3；「更多」与原「操作」入口一致。
+        // 显示器1~4 上移到主菜单直接发送 Ctrl+Alt+Shift+F1~F4；
+        // 原「更多」入口与侧边栏「操作」打开的是同一面板（GameFunctionFragment），已移除「更多」，
+        // 显示器4 恢复显示并占据原「更多」的位置。
         v.findViewById(R.id.btn_display_1).setOnClickListener(this);
         v.findViewById(R.id.btn_display_2).setOnClickListener(this);
         v.findViewById(R.id.btn_display_3).setOnClickListener(this);
-        v.findViewById(R.id.btn_more).setOnClickListener(this);
+        v.findViewById(R.id.btn_display_4).setOnClickListener(this);
         // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] END
         v.findViewById(R.id.bt_virtual_view).setOnClickListener(this);
         v.findViewById(R.id.bt_display).setOnClickListener(this);
@@ -151,14 +157,26 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
             }
             return;
         }
+        if (v.getId() == R.id.btn_display_4) {
+            if (conn != null) {
+                sendKeys(new short[]{KeyboardTranslator.VK_LCONTROL, KeyboardTranslator.VK_LMENU, KeyboardTranslator.VK_LSHIFT, KeyboardTranslator.VK_F4});
+            }
+            return;
+        }
 
-        //操作 或 更多
-        if(v.getId()==R.id.btn_soft_function || v.getId()==R.id.btn_more){
+        //操作（侧边栏入口；原主菜单「更多」与其重复，已移除）
+        if(v.getId()==R.id.btn_soft_function){
             GameFunctionFragment fragment=new GameFunctionFragment();
             fragment.setWidth(UiHelper.dpToPx(getActivity(),364));
-            fragment.setTitle("更多");
+            fragment.setTitle("操作");
             fragment.setGame(game);
             fragment.setConn(conn);
+            // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+            // 「自定义快捷键」分组沿用设置里的「禁用默认的特殊按键指令」开关控制内置项。
+            if(game!=null){
+                fragment.setEnableClearDefaultSpecial(game.prefConfig.enableClearDefaultSpecial);
+            }
+            // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
             fragment.setOnClick(new GameFunctionFragment.onClick() {
                 @Override
                 public void click(String title, int index) {
@@ -307,36 +325,10 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
         // 麦克风 / 手柄键鼠 的点击处理已移入 GameFunctionFragment（「更多」子面板）。
         // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] END
 
-        if(v.getId()==R.id.bt_quick_list){
-            GameListQuickFragment fragment=new GameListQuickFragment();
-            fragment.setWidth(UiHelper.dpToPx(getActivity(),364));
-            fragment.setTitle("快捷键(字体倾斜项可长按删除)");
-            if(game!=null){
-                fragment.setEnableClearDefaultSpecial(game.prefConfig.enableClearDefaultSpecial);
-            }
-            fragment.setOnClick(new GameListQuickFragment.onClick() {
-                @Override
-                public void click(GameMenuQuickBean bean) {
-                    if(bean==null){
-                        return;
-                    }
-                    if(!TextUtils.isEmpty(bean.getName())){
-                        Toast.makeText(getActivity(),bean.getName(),Toast.LENGTH_SHORT).show();
-                    }
-                    //原来的快捷键列表逻辑
-                    if(TextUtils.isEmpty(bean.getId())){
-                        if(conn!=null){
-                            sendKeys(bean.getDatas());
-                        }
-                        return;
-                    }
-                    sendQuickKeylist(bean.getCodes());
-
-                }
-            });
-            fragment.show(getFragmentManager());
-            return;
-        }
+        // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+        // 原「快捷键」入口（bt_quick_list）已移除：内置项与用户自定义项整体移入
+        // GameFunctionFragment 的「自定义快捷键」分组，「禁用默认的特殊按键指令」开关继续生效。
+        // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
         if(v.getId()==R.id.bt_touch_list){
             // EXTENSION DEVELOPMENT [EXT-TOUCHPAD-MULTI-GESTURE] [MODIFIED] BEGIN
             // Keep actions appended after the mouse modes stable when extensions add modes.
@@ -622,18 +614,7 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
         return 100;
     }
 
-    private void sendQuickKeylist(String codes){
-        if(TextUtils.isEmpty(codes)){
-            return;
-        }
-        String[] keys=codes.split(",");
-        for (int i = 0; i < keys.length; i++) {
-            game.keyboardEvent(true, Short.parseShort(keys[i]));
-        }
-        new Handler().postDelayed((() -> {
-            for (int i = keys.length - 1; i >= 0; i--) {
-                game.keyboardEvent(false, Short.parseShort(keys[i]));
-            }
-        }), KEY_UP_DELAY);
-    }
+    // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+    // sendQuickKeylist() 已随「快捷键」入口一并移入 GameFunctionFragment（自定义快捷键发送逻辑）。
+    // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
 }

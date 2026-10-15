@@ -36,6 +36,12 @@ import static com.limelight.ui.gamemenu.GameListKeyBoardFragment.PREF_KEYBOARD_L
  * Description
  * Date: 2024-10-20
  * Time: 16:07
+ *
+ * EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+ * 已不再从串流菜单打开：「快捷键」整体融入「操作」面板的「自定义快捷键」分组
+ * （GameFunctionFragment + QuickKeyStore）。本类保留用于兼容旧调用路径，
+ * 内置项清单与存储读写请以 QuickKeyStore 为准，不要再在此处新增内置项。
+ * EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
  */
 public class GameListQuickFragment extends BaseGameMenuDialog {
     private static final String PREF_NAME = "specialPrefs";

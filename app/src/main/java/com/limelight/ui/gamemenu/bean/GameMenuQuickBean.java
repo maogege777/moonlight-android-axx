@@ -16,6 +16,13 @@ public class GameMenuQuickBean {
     private String desc;
 
     private String id;
+
+    // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+    // 自定义快捷键图标 key（例如 qk_bolt），为空表示使用默认键盘图标。
+    private String icon;
+    // 自定义快捷键在「操作」面板中的排列顺序，按添加顺序递增。
+    private int sort;
+    // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
     //类型 1鼠标 2触控板 3摇杆 4普通按钮 5十字键
     private int btnType;
     //宽
@@ -106,6 +113,26 @@ public class GameMenuQuickBean {
     public void setDatas(short[] datas) {
         this.datas = datas;
     }
+
+    // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+    public String getIcon() {
+        return icon;
+    }
+
+    public GameMenuQuickBean setIcon(String icon) {
+        this.icon = icon;
+        return this;
+    }
+
+    public int getSort() {
+        return sort;
+    }
+
+    public GameMenuQuickBean setSort(int sort) {
+        this.sort = sort;
+        return this;
+    }
+    // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
 
     public String getCodes() {
         return codes;

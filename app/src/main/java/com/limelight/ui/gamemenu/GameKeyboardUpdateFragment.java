@@ -67,6 +67,16 @@ public class GameKeyboardUpdateFragment extends BaseGameMenuDialog implements Vi
 
     private List<GameMenuQuickBean> beanFunctionList =new ArrayList<>();
 
+    // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+    // 编辑已有自定义快捷键时预填名称、组合键与图标；新增时保持原有空白状态。
+    private GameMenuQuickBean existing;
+    private String selectedIcon;
+    private LinearLayout iconPickerContainer;
+    // 编辑内置项（只有 VK 码 datas）时为 true：允许不重新按键、只改名称或图标，
+    // 保存时沿用原组合键。
+    private boolean inheritedCombo;
+    // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
+
     @Override
     public void bindView(View v) {
         super.bindView(v);
@@ -92,6 +102,37 @@ public class GameKeyboardUpdateFragment extends BaseGameMenuDialog implements Vi
         });
         v.findViewById(R.id.btn_right).setOnClickListener(this);
         v.findViewById(R.id.btn_reset).setOnClickListener(this);
+
+        // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+        // 编辑：预填名称与组合键（codes 为 Android 键码，与虚拟键盘 tag 同源）。
+        if (existing != null) {
+            selectedIcon = existing.getIcon();
+            if (!TextUtils.isEmpty(existing.getCodes())) {
+                contentValues.append(existing.getCodes());
+                String[] codes = existing.getCodes().split(",");
+                String[] names = existing.getDesc() == null
+                        ? new String[0] : existing.getDesc().split("\\+");
+                StringBuilder prefilledNames = new StringBuilder();
+                for (int i = 0; i < codes.length; i++) {
+                    if (i > 0) {
+                        prefilledNames.append("+");
+                    }
+                    prefilledNames.append(i < names.length ? names[i] : codes[i]);
+                }
+                contentNames.append(prefilledNames);
+                tx_content.setText(prefilledNames.toString());
+                edt_name.setText(existing.getName());
+            } else if (existing.getDatas() != null && existing.getDatas().length > 0) {
+                // 内置项（只有 VK 码 datas，没有 Android 键码 codes）：预填名称与原始组合键文本，
+                // 只改图标或名称时不重新按键也能保存，此时沿用原组合键（见 onClick 的 inheritedCombo）。
+                inheritedCombo = true;
+                String label = existing.getName() == null ? "" : existing.getName();
+                tx_content.setText(label);
+                edt_name.setText(existing.getName());
+            }
+        }
+        buildIconPicker(v);
+        // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
 
 
         rg_keyboard=v.findViewById(R.id.rg_keyboard);
@@ -253,6 +294,72 @@ public class GameKeyboardUpdateFragment extends BaseGameMenuDialog implements Vi
         });
     }
 
+    // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+    /** 图标选择器：横向滚动的 vector 图标库，选中项高亮；不选择则保存时留空（回落默认图标）。 */
+    private void buildIconPicker(View root) {
+        iconPickerContainer = root.findViewById(R.id.lv_icon_picker);
+        if (iconPickerContainer == null) {
+            return;
+        }
+        iconPickerContainer.removeAllViews();
+        // 单元格高度略小于 42dp 的图标行，避免在竖屏下挤压虚拟键盘区域
+        int size = (int) (getResources().getDisplayMetrics().density * 38);
+        int iconSize = (int) (getResources().getDisplayMetrics().density * 18);
+        int margin = (int) (getResources().getDisplayMetrics().density * 3);
+        for (String key : QuickKeyStore.iconLibrary()) {
+            LinearLayout cell = new LinearLayout(getActivity());
+            cell.setOrientation(LinearLayout.VERTICAL);
+            cell.setGravity(android.view.Gravity.CENTER);
+            cell.setPadding(margin, margin, margin, margin);
+            cell.setBackgroundResource(R.drawable.ic_game_menu_btn_selector);
+
+            android.widget.ImageView icon = new android.widget.ImageView(getActivity());
+            icon.setImageResource(QuickKeyStore.iconRes(key));
+            cell.addView(icon, new LinearLayout.LayoutParams(iconSize, iconSize));
+
+            TextView label = new TextView(getActivity());
+            label.setText(QuickKeyStore.iconLabel(key));
+            label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 7);
+            label.setTextColor(0xFF9AA0A6);
+            label.setGravity(android.view.Gravity.CENTER);
+            LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            labelParams.topMargin = margin;
+            cell.addView(label, labelParams);
+
+            cell.setOnClickListener(view -> {
+                selectedIcon = key;
+                highlightIconPicker();
+            });
+            cell.setTag(key);
+
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(size, size);
+            params.setMarginEnd(margin);
+            iconPickerContainer.addView(cell, params);
+        }
+        highlightIconPicker();
+    }
+
+    private void highlightIconPicker() {
+        if (iconPickerContainer == null) {
+            return;
+        }
+        boolean selected = !TextUtils.isEmpty(selectedIcon);
+        for (int i = 0; i < iconPickerContainer.getChildCount(); i++) {
+            View child = iconPickerContainer.getChildAt(i);
+            boolean active = selected && selectedIcon.equals(child.getTag());
+            child.setBackgroundResource(active
+                    ? R.drawable.ic_game_menu_btn_green_selector
+                    : R.drawable.ic_game_menu_btn_selector);
+            child.setAlpha(active ? 1f : 0.6f);
+        }
+    }
+
+    public void setExisting(GameMenuQuickBean existing) {
+        this.existing = existing;
+    }
+    // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
+
     @Override
     public float getDimAmount() {
         return 0.9f;
@@ -278,7 +385,7 @@ public class GameKeyboardUpdateFragment extends BaseGameMenuDialog implements Vi
                 Toast.makeText(getActivity(),"请输入名称！",Toast.LENGTH_SHORT).show();
                 return;
             }
-            if(TextUtils.isEmpty(contentValues.toString())){
+            if(TextUtils.isEmpty(contentValues.toString()) && !inheritedCombo){
                 Toast.makeText(getActivity(),"请输入组合键！",Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -290,9 +397,29 @@ public class GameKeyboardUpdateFragment extends BaseGameMenuDialog implements Vi
             if(keyFrom==1){
                 bean.setId( PREF_QUICK_LIST_KEY+System.currentTimeMillis());
             }
+            // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+            // 编辑已有项时保留原 id（覆盖同一条记录）、原 sort（保持原位）与既有自定义导入项的发送方式。
+            if (existing != null) {
+                bean.setId(existing.getId());
+                bean.setSort(existing.getSort());
+                bean.setDatas(existing.getDatas());
+            }
+            // 未选择图标时：编辑保留原图标，新增留空（显示层回落默认键盘图标）。
+            bean.setIcon(!TextUtils.isEmpty(selectedIcon) ? selectedIcon
+                    : (existing != null ? existing.getIcon() : null));
+            // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
             bean.setBtnType(4);
-            bean.setCodes(contentValues.toString());
-            bean.setDesc(contentNames.toString());
+            // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+            // 编辑内置项且没有重新按键时，保留原 codes / desc（内置项本身只有 VK 码 datas，
+            // 走 VK 通道发送）；其余情况与旧版一致，取本次输入的按键。
+            if (inheritedCombo && TextUtils.isEmpty(contentValues.toString())) {
+                bean.setCodes(existing.getCodes());
+                bean.setDesc(existing.getDesc());
+            } else {
+                bean.setCodes(contentValues.toString());
+                bean.setDesc(contentNames.toString());
+            }
+            // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
 //            saveKeyBoardListData(getActivity(),bean);
 //            Toast.makeText(getActivity(),"已保存！",Toast.LENGTH_SHORT).show();
             onClick.click(bean);

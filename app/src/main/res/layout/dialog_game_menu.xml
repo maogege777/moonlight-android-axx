@@ -286,8 +286,9 @@
             android:orientation="horizontal">
 
             <!-- EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN -->
-            <!-- 原「显示器」入口改名为「更多」并移到本行最后；显示器1~3 从「操作」子面板上移到此处；
-                 麦克风 / 虚拟鼠标 / 手柄键鼠 移入「更多」子面板。 -->
+            <!-- 显示器1~4 全部在本行直接发送 Ctrl+Alt+Shift+F1~F4；
+                 原「更多」入口与侧边栏「操作」打开的是同一个面板（GameFunctionFragment），
+                 属于重复入口，已移除；「操作」面板内含 麦克风 / 虚拟鼠标 / 手柄键鼠 等。 -->
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -336,27 +337,12 @@
                 android:layout_weight="1"
                 android:background="@drawable/ic_game_menu_btn_selector"
                 android:drawablePadding="4dp"
-                android:drawableTop="@drawable/ic_axi_app_more"
-                android:gravity="center"
-                android:padding="4dp"
-                android:id="@+id/btn_more"
-                android:text="更多"
-                android:textSize="11dp" />
-
-            <!-- 显示器4 按要求隐藏（注释保留，如需恢复取消注释即可）
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@drawable/ic_game_menu_btn_selector"
-                android:drawablePadding="4dp"
                 android:drawableTop="@drawable/ic_axi_switch_screen"
                 android:gravity="center"
                 android:padding="4dp"
                 android:id="@+id/btn_display_4"
                 android:text="显示器4"
                 android:textSize="11dp" />
-            -->
             <!-- EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] END -->
 
         </LinearLayout>
@@ -389,20 +375,8 @@
                 android:text="鼠标与触控"
                 android:textSize="11dp" />
 
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:background="@drawable/ic_game_menu_btn_selector"
-                android:drawableLeft="@drawable/ic_axi_quick"
-                android:drawablePadding="4dp"
-                android:drawableRight="@drawable/ic_axi_arrow"
-                android:gravity="left|center_vertical"
-                android:padding="10dp"
-                android:text="快捷键"
-                android:id="@+id/bt_quick_list"
-                android:textSize="11dp" />
-
+            <!-- EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN -->
+            <!-- 「快捷键」入口已移除：其功能整体融入侧边栏「操作」面板的「自定义快捷键」分组。 -->
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

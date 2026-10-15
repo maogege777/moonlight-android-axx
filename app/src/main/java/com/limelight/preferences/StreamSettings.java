@@ -1071,6 +1071,34 @@ public class StreamSettings extends Activity {
                 });
             }
 
+            // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+            // 自定义快捷键导出 / 导入：导出走 ACTION_CREATE_DOCUMENT（与主机配对备份同款，
+            // 可选保存路径与文件名），导入走 ACTION_OPEN_DOCUMENT，导入前二次确认并覆盖全部自定义项。
+            Preference quickKeysExport = findPreference("export_quick_keys_file");
+            if (quickKeysExport != null) {
+                quickKeysExport.setOnPreferenceClickListener(preference -> {
+                    Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("application/json");
+                    intent.putExtra(Intent.EXTRA_TITLE, "axi_quick_keys-"
+                            + new java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US)
+                                    .format(new java.util.Date()) + ".json");
+                    startActivityForResult(intent, WRITE_QUICK_KEYS_REQUEST_CODE);
+                    return false;
+                });
+            }
+            Preference quickKeysImport = findPreference("import_quick_keys_file");
+            if (quickKeysImport != null) {
+                quickKeysImport.setOnPreferenceClickListener(preference -> {
+                    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("application/json");
+                    startActivityForResult(intent, READ_QUICK_KEYS_REQUEST_CODE);
+                    return false;
+                });
+            }
+            // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
+
             findPreference("export_pairing_backup").setOnPreferenceClickListener(preference -> {
                 Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -1128,6 +1156,61 @@ public class StreamSettings extends Activity {
 
         int READ_REQUEST_SCREEN_IMAGE_CODE=1008;
 
+        // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+        private static final int READ_QUICK_KEYS_REQUEST_CODE = 1009;
+        private static final int WRITE_QUICK_KEYS_REQUEST_CODE = 1010;
+
+        /** 导出自定义快捷键到用户选定的文件。 */
+        private void exportQuickKeys(Uri uri) {
+            Activity activity = getActivity();
+            if (activity == null) {
+                return;
+            }
+            String json = com.limelight.ui.gamemenu.QuickKeyStore.exportJson(activity);
+            if (TextUtils.isEmpty(json)) {
+                AppDialog.showMessage(activity, "导出自定义快捷键", "没有可导出的自定义快捷键。",
+                        getString(R.string.dialog_action_close), null);
+                return;
+            }
+            boolean written = FileUriUtils.openUriForWrite(activity, uri, json);
+            AppDialog.showMessage(activity, "导出自定义快捷键",
+                    written ? "已导出，可在你选择的位置查看该配置文件。" : "写入失败，请重试或换一个保存位置。",
+                    getString(R.string.dialog_action_close), null);
+        }
+
+        /** 导入自定义快捷键：先确认，再覆盖全部自定义项并恢复内置项的删除状态。 */
+        private void importQuickKeys(Uri uri) {
+            Activity activity = getActivity();
+            if (activity == null) {
+                return;
+            }
+            String json = FileUriUtils.openUriForRead(activity, uri);
+            com.limelight.ui.gamemenu.QuickKeyStore.ImportResult parsed =
+                    com.limelight.ui.gamemenu.QuickKeyStore.parseImport(json);
+            if (parsed == null) {
+                AppDialog.showMessage(activity, "导入自定义快捷键",
+                        "文件格式不正确，请选择本应用导出的自定义快捷键配置文件。",
+                        getString(R.string.dialog_action_close), null);
+                return;
+            }
+            int existingCount = com.limelight.ui.gamemenu.QuickKeyStore.loadCustom(activity).size();
+            AppDialog.showConfirm(activity, "导入自定义快捷键",
+                    "导入会覆盖当前全部自定义快捷键。\n当前 " + existingCount + " 项 → 导入 "
+                            + parsed.custom.size() + " 项。\n建议先导出备份。",
+                    "导入", true,
+                    () -> {
+                        com.limelight.ui.gamemenu.QuickKeyStore.replaceAllCustom(activity, parsed.custom);
+                        // replaceAllCustom 会清空整张表，内置项的编辑记录（改名 / 换图标）需要单独恢复。
+                        com.limelight.ui.gamemenu.QuickKeyStore.replaceBuiltinOverrides(activity, parsed.builtinOverrides);
+                        com.limelight.ui.gamemenu.QuickKeyStore.replaceBuiltinHidden(activity, parsed.hiddenBuiltins);
+                        AppDialog.showMessage(activity, "导入自定义快捷键",
+                                "导入成功，共 " + parsed.custom.size() + " 项自定义快捷键。",
+                                getString(R.string.dialog_action_close), null);
+                    },
+                    null);
+        }
+        // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
+
         @Override
         public void onActivityResult(int requestCode, int resultCode, Intent data) {
             super.onActivityResult(requestCode, resultCode, data);
@@ -1141,6 +1224,16 @@ public class StreamSettings extends Activity {
                 }
                 return;
             }
+            // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+            if (requestCode == WRITE_QUICK_KEYS_REQUEST_CODE) {
+                exportQuickKeys(data.getData());
+                return;
+            }
+            if (requestCode == READ_QUICK_KEYS_REQUEST_CODE) {
+                importQuickKeys(data.getData());
+                return;
+            }
+            // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
             if ((requestCode == READ_REQUEST_CODE || requestCode == GAMEPAD_READ_REQUEST_CODE) && resultCode == Activity.RESULT_OK &&data.getData()!=null) {
                 try {
                     Uri uri = data.getData();

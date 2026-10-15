@@ -82,7 +82,12 @@ final class SettingsCatalog {
             new Section("界面", "list_languages", "change_screen_label_key",
                 "checkbox_enable_screen_bg", "import_image_file_key", "checkbox_enable_screen_obscure"),
             new Section("应用行为", "checkbox_enable_pass_menu", "checkbox_enable_pip", "checkbox_enable_exdisplay",
-                "checkbox_enable_game_manager_quest", "checkbox_disable_warnings"))
+                "checkbox_enable_game_manager_quest", "checkbox_disable_warnings"),
+            // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+            // 自定义快捷键的导出 / 导入，紧随「应用行为」之后。
+            new Section("自定义快捷键", "export_quick_keys_file", "import_quick_keys_file")
+            // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
+            )
     };
 
     // These legacy rows are represented by one editor, or no longer apply to the new surface.

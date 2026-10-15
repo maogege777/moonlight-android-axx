@@ -3,15 +3,24 @@ package com.limelight.ui.gamemenu;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.limelight.Game;
 import com.limelight.R;
 import com.limelight.nvstream.NvConnection;
+import com.limelight.ui.AppDialog;
 import com.limelight.ui.BaseFragmentDialog.BaseGameMenuDialog;
+import com.limelight.ui.gamemenu.bean.GameMenuQuickBean;
+import com.limelight.utils.UiHelper;
+
+import java.util.List;
 
 /**
  * Description
@@ -39,6 +48,14 @@ public class GameFunctionFragment extends BaseGameMenuDialog implements View.OnC
     private Game game;
     private NvConnection conn;
     // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] END
+
+    // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+    // 「自定义快捷键」分组：原主菜单「特色功能 › 快捷键」整体移入本面板顶部。
+    private static final int QUICK_KEY_COLUMNS = 4;
+    private LinearLayout quickKeyContainer;
+    private boolean enableClearDefaultSpecial;
+    private List<GameMenuQuickBean> quickKeys;
+    // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
 
     @Override
     public void bindView(View v) {
@@ -69,7 +86,7 @@ public class GameFunctionFragment extends BaseGameMenuDialog implements View.OnC
         v.findViewById(R.id.btn_hdr).setOnClickListener(this);
 
         // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN
-        // 显示器1~4 已移出本面板（显示器1~3 上移至主菜单，显示器4 隐藏注释），不再绑定点击。
+        // 显示器1~4 全部位于主菜单第三行，本面板不再放置显示器按钮，也不绑定其点击。
         // 移入的开关按钮在此绑定并初始化状态高亮。
         btn_mic=v.findViewById(R.id.btn_mic);
         btn_mic.setOnClickListener(this);
@@ -83,6 +100,12 @@ public class GameFunctionFragment extends BaseGameMenuDialog implements View.OnC
             refreshGamepadMouseButton();
         }
         // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] END
+
+        // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+        v.findViewById(R.id.btn_quick_add).setOnClickListener(this);
+        quickKeyContainer=v.findViewById(R.id.quick_key_container);
+        refreshQuickKeys();
+        // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
     }
 
     // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN
@@ -112,6 +135,194 @@ public class GameFunctionFragment extends BaseGameMenuDialog implements View.OnC
     }
     // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] END
 
+    // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+    public void setEnableClearDefaultSpecial(boolean enableClearDefaultSpecial) {
+        this.enableClearDefaultSpecial = enableClearDefaultSpecial;
+    }
+
+    /** 按 4 列网格重建「自定义快捷键」分组，顺序为未删除的内置项在前、用户项按添加顺序追加。 */
+    private void refreshQuickKeys() {
+        if (quickKeyContainer == null || getActivity() == null) {
+            return;
+        }
+        quickKeys = QuickKeyStore.load(getActivity(), enableClearDefaultSpecial);
+        quickKeyContainer.removeAllViews();
+        LayoutInflater inflater = LayoutInflater.from(getActivity());
+        LinearLayout row = null;
+        for (int i = 0; i < quickKeys.size(); i++) {
+            if (i % QUICK_KEY_COLUMNS == 0) {
+                row = new LinearLayout(getActivity());
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, UiHelper.dpToPx(getActivity(), 54));
+                rowParams.setMargins(UiHelper.dpToPx(getActivity(), 5), UiHelper.dpToPx(getActivity(), 5),
+                        UiHelper.dpToPx(getActivity(), 5), UiHelper.dpToPx(getActivity(), 5));
+                quickKeyContainer.addView(row, rowParams);
+            }
+            final GameMenuQuickBean bean = quickKeys.get(i);
+            View item = inflater.inflate(R.layout.item_game_menu_quick_key, row, false);
+            ((ImageView) item.findViewById(R.id.iv_quick_icon))
+                    .setImageResource(QuickKeyStore.iconRes(bean.getIcon()));
+            ((TextView) item.findViewById(R.id.tx_quick_name)).setText(quickKeyLabel(bean));
+            TextView desc = item.findViewById(R.id.tx_quick_desc);
+            String descText = quickKeyDesc(bean);
+            if (TextUtils.isEmpty(descText)) {
+                desc.setVisibility(View.GONE);
+            } else {
+                desc.setVisibility(View.VISIBLE);
+                desc.setText(descText);
+            }
+            item.setOnClickListener(v -> sendQuickKey(bean));
+            item.setOnLongClickListener(v -> {
+                showQuickKeyMenu(bean);
+                return true;
+            });
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
+            params.setMarginEnd(UiHelper.dpToPx(getActivity(), 5));
+            row.addView(item, params);
+        }
+        // 末行不足四列时补空槽，保持与「快捷操作」等原有分组一致的四列对齐
+        if (!quickKeys.isEmpty() && quickKeys.size() % QUICK_KEY_COLUMNS != 0) {
+            addQuickKeySpacers(row, quickKeys.size());
+        }
+    }
+
+    private void addQuickKeySpacers(LinearLayout row, int filled) {
+        int target = ((filled + QUICK_KEY_COLUMNS - 1) / QUICK_KEY_COLUMNS) * QUICK_KEY_COLUMNS;
+        for (int i = filled; i < target; i++) {
+            View spacer = new View(getActivity());
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
+            params.setMarginEnd(UiHelper.dpToPx(getActivity(), 5));
+            row.addView(spacer, params);
+        }
+    }
+
+    /**
+     * 主标题：内置项取括号前的按键组合（"Ctrl+Shift+ESC (任务管理器)" → "Ctrl+Shift+ESC"），
+     * 用户自定义项取用户输入的名称。
+     */
+    private static String quickKeyLabel(GameMenuQuickBean bean) {
+        String name = bean.getName();
+        if (TextUtils.isEmpty(name)) {
+            name = bean.getDesc();
+        }
+        if (TextUtils.isEmpty(name)) {
+            return "";
+        }
+        int bracket = name.indexOf('(');
+        if (bracket > 0) {
+            name = name.substring(0, bracket);
+        }
+        return name.trim();
+    }
+
+    /** 副标题：内置项取括号内的用途说明；用户自定义项取组合键名称（如 Ctrl+Shift+Z）。 */
+    private static String quickKeyDesc(GameMenuQuickBean bean) {
+        String name = bean.getName();
+        if (!TextUtils.isEmpty(name)) {
+            int bracket = name.indexOf('(');
+            if (bracket > 0 && name.endsWith(")")) {
+                return name.substring(bracket + 1, name.length() - 1).trim();
+            }
+        }
+        return bean.getDesc() == null ? "" : bean.getDesc();
+    }
+
+    /** 单击：发送组合键并关闭面板（已确认的交互方案 A）。 */
+    private void sendQuickKey(GameMenuQuickBean bean) {
+        if (bean == null) {
+            return;
+        }
+        if (!TextUtils.isEmpty(bean.getName())) {
+            Toast.makeText(getActivity(), bean.getName(), Toast.LENGTH_SHORT).show();
+        }
+        // 有 codes 的项（用户自定义项、以及被重新绑定过按键的内置项）走 Android 键码通道，
+        // 与旧 sendQuickKeylist 一致；只有 datas 的内置项与旧版导入项走 VK 码通道，
+        // 与旧「快捷键」列表一致。这样编辑内置项的按键后不会仍发送原来的组合键。
+        if (!TextUtils.isEmpty(bean.getCodes())) {
+            sendQuickKeyCodes(bean.getCodes());
+        } else if (conn != null && bean.getDatas() != null && bean.getDatas().length > 0) {
+            GameMenuFragment.sendKeys(conn, bean.getDatas());
+        }
+        dismiss();
+    }
+
+    /** 长按：编辑 / 删除（内置移入项同样可删除）。 */
+    private void showQuickKeyMenu(GameMenuQuickBean bean) {
+        String[] actions = new String[]{"编辑", "删除"};
+        new AlertDialog.Builder(getActivity())
+                .setTitle(bean.getName())
+                .setItems(actions, (dialog, which) -> {
+                    if (which == 0) {
+                        openQuickKeyEditor(bean);
+                    } else {
+                        confirmDeleteQuickKey(bean);
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void confirmDeleteQuickKey(GameMenuQuickBean bean) {
+        AppDialog.showConfirm(
+                getActivity(),
+                bean.getName(),
+                "是否删除此键值？",
+                "删除",
+                true,
+                () -> {
+                    if (QuickKeyStore.isBuiltin(bean)) {
+                        QuickKeyStore.hideBuiltin(getActivity(), bean);
+                    } else {
+                        QuickKeyStore.removeCustom(getActivity(), bean);
+                    }
+                    refreshQuickKeys();
+                },
+                null);
+    }
+
+    private void openQuickKeyEditor(GameMenuQuickBean existing) {
+        GameKeyboardUpdateFragment fragment = new GameKeyboardUpdateFragment();
+        fragment.setWidth(fullScreenWidth());
+        fragment.setDimAmount(0.8f);
+        fragment.setTitle(existing == null ? "设置快捷键" : "编辑快捷键");
+        fragment.setKeyFrom(1);
+        fragment.setExisting(existing);
+        fragment.setOnClick(bean -> {
+            if (bean == null) {
+                return;
+            }
+            QuickKeyStore.saveCustom(getActivity(), bean);
+            refreshQuickKeys();
+        });
+        fragment.show(getFragmentManager());
+    }
+
+    private int fullScreenWidth() {
+        if (getResources().getDisplayMetrics().widthPixels > getResources().getDisplayMetrics().heightPixels) {
+            return getResources().getDisplayMetrics().widthPixels;
+        }
+        return (getResources().getDisplayMetrics().heightPixels * 2) / 3;
+    }
+
+    private void sendQuickKeyCodes(String codes) {
+        if (TextUtils.isEmpty(codes) || game == null) {
+            return;
+        }
+        String[] keys = codes.split(",");
+        for (int i = 0; i < keys.length; i++) {
+            game.keyboardEvent(true, Short.parseShort(keys[i]));
+        }
+        new android.os.Handler().postDelayed(() -> {
+            for (int i = keys.length - 1; i >= 0; i--) {
+                game.keyboardEvent(false, Short.parseShort(keys[i]));
+            }
+        }, 25);
+    }
+    // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
+
     public void setTitle(String title) {
         this.title = title;
     }
@@ -130,6 +341,14 @@ public class GameFunctionFragment extends BaseGameMenuDialog implements View.OnC
 
     @Override
     public void onClick(View v) {
+        // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+        // 标题栏右上角「新增」：打开与旧「快捷键」界面一致的录入面板（含图标选择）。
+        if (v.getId() == R.id.btn_quick_add) {
+            openQuickKeyEditor(null);
+            return;
+        }
+        // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
+
         // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN
         // 移入的开关按钮：点击后即时切换状态并刷新高亮，不关闭面板。
         if (v.getId() == R.id.btn_mic) {
@@ -213,7 +432,7 @@ public class GameFunctionFragment extends BaseGameMenuDialog implements View.OnC
         }
 
         // EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN
-        // 显示器1~4 分支已随按钮移出本面板。
+        // 显示器1~4 分支已随按钮移至主菜单处理。
         if(v.getId()==R.id.btn_hdr){
             click.click("HDR开关",15);
             return;

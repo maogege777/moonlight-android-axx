@@ -29,6 +29,21 @@
             android:textColor="@android:color/white"
             android:textSize="13dp" />
 
+        <!-- EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN -->
+        <!-- 原「快捷键」界面右上角的「新增」按钮随功能一并移入本面板。 -->
+        <Button
+            android:layout_width="50dp"
+            android:layout_height="24dp"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:background="@drawable/ic_game_menu_btn_side_selector"
+            android:gravity="center"
+            android:id="@+id/btn_quick_add"
+            android:text="新增"
+            android:textColor="@android:color/white"
+            android:textSize="11dp" />
+        <!-- EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END -->
+
     </RelativeLayout>
 
     <ScrollView
@@ -40,6 +55,44 @@
             android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
+
+            <!-- EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN -->
+            <!-- 「自定义快捷键」分组：原主菜单「特色功能 › 快捷键」整体移入此处。
+                 内容（内置项 + 用户添加项）由 GameFunctionFragment 动态填充到 quick_key_container。
+                 标题旁带操作说明；下方「快捷操作」等原有分组不加说明。 -->
+            <LinearLayout
+                android:layout_marginTop="10dp"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:layout_marginBottom="5dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="自定义快捷键"
+                    android:textStyle="bold"
+                    android:textColor="@android:color/white"
+                    android:textSize="12dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="单击＝发送并关闭面板 · 长按＝编辑 / 删除"
+                    android:textColor="#E8A04A"
+                    android:textSize="8dp" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/quick_key_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+            <!-- EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END -->
 
             <LinearLayout
                 android:layout_marginTop="10dp"
@@ -68,8 +121,7 @@
             </LinearLayout>
 
             <!-- EXTENSION DEVELOPMENT [EXT-GAME-MENU-RESTRUCTURE] [MODIFIED] BEGIN -->
-            <!-- 显示器1~3 已上移至主菜单第三行，显示器4 按要求注释隐藏；
-                 此处首行改为从主菜单移入的 麦克风 / 虚拟鼠标 / 手柄键鼠 开关按钮。 -->
+            <!-- 显示器1~4 全部位于主菜单第三行；此处首行为 麦克风 / 虚拟鼠标 / 手柄键鼠 开关按钮。 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
@@ -125,7 +177,7 @@
 
             </LinearLayout>
 
-            <!-- 显示器1~4（显示器1~3 已上移至主菜单，显示器4 隐藏注释保留，如需恢复取消注释即可）
+            <!-- 显示器1~4 全部位于主菜单第三行，本面板不再放置显示器按钮
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
