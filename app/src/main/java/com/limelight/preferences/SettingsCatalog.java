@@ -81,7 +81,7 @@ final class SettingsCatalog {
         new Group("界面与通用", "语言、首页与应用行为",
             new Section("界面", "list_languages", "change_screen_label_key",
                 "checkbox_enable_screen_bg", "import_image_file_key", "checkbox_enable_screen_obscure"),
-            new Section("应用行为", "checkbox_enable_pip", "checkbox_enable_exdisplay",
+            new Section("应用行为", "checkbox_enable_pass_menu", "checkbox_enable_pip", "checkbox_enable_exdisplay",
                 "checkbox_enable_game_manager_quest", "checkbox_disable_warnings"))
     };
 
@@ -89,7 +89,7 @@ final class SettingsCatalog {
     static final String[] MERGED_OR_RETIRED = {
         "edit_diy_w_h", "edit_diy_bitrate", "checkbox_enable_perf_overlay",
         "checkbox_enable_perf_overlay_lite", "checkbox_ui_theme_white",
-        "checkbox_small_icon_mode", "checkbox_enable_pass_menu", "settings_about", "settings_help"
+        "checkbox_small_icon_mode", "settings_about", "settings_help"
     };
 
     static int overlayMode(boolean enabled, boolean lite) {
