@@ -384,7 +384,7 @@ public final class QuickKeyStore {
                         bean.setCodes(codes);
                     }
                     JSONArray datas = object.optJSONArray("datas");
-                    if (datas != null && datas.length > 0) {
+                    if (datas != null && datas.length() > 0) {
                         short[] values = new short[datas.length()];
                         for (int j = 0; j < datas.length(); j++) {
                             values[j] = (short) datas.getInt(j);
