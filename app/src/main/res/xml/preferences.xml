@@ -588,7 +588,7 @@
         <CheckBoxPreference
             android:key="checkbox_enable_clear_default_special_button"
             android:title="禁用默认的特殊按键指令(快捷键)"
-            android:summary="如果你感觉内置的指令对你没什么用的话，可以禁用，使用自己导入的。"
+            android:summary="隐藏首次运行时初始化的那组默认快捷键（自己添加的不受影响）。开启后新设备不再初始化默认组。"
             android:defaultValue="false"/>
 
         <CheckBoxPreference

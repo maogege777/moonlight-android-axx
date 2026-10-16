@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 共用弹窗面板背景（AppDialog / 导入导出确认等 8 处弹窗共用）。
+     v4：由半透明 #61262626 改为不透明 #FF262626（与串流菜单面板 gameMenuBgColor 同档深色），
+     串流画面上打开弹窗时不再透出游戏画面。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
 
-    <solid android:color="#61262626" />
+    <solid android:color="#FF262626" />
 
     <corners android:radius="16dp" />
 

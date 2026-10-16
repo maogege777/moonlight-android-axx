@@ -26,10 +26,10 @@
             android:textSize="13dp" />
 
         <Button
-            android:layout_width="50dp"
+            android:layout_width="62dp"
             android:layout_height="24dp"
             android:layout_centerVertical="true"
-            android:text="清空"
+            android:text="清空按键"
             android:background="@drawable/ic_game_menu_btn_side_selector"
             android:layout_marginRight="5dp"
             android:gravity="center"

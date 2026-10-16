@@ -163,7 +163,16 @@ public class GameFunctionFragment extends BaseGameMenuDialog implements View.OnC
             View item = inflater.inflate(R.layout.item_game_menu_quick_key, row, false);
             ((ImageView) item.findViewById(R.id.iv_quick_icon))
                     .setImageResource(QuickKeyStore.iconRes(bean.getIcon()));
-            ((TextView) item.findViewById(R.id.tx_quick_name)).setText(quickKeyLabel(bean));
+            // 名称留空时不显示名称行（用户确认：不填写就没有名称），
+            // 组合键文本（desc）作为副标题显示。
+            String label = quickKeyLabel(bean);
+            TextView name = item.findViewById(R.id.tx_quick_name);
+            if (TextUtils.isEmpty(label)) {
+                name.setVisibility(View.GONE);
+            } else {
+                name.setVisibility(View.VISIBLE);
+                name.setText(label);
+            }
             TextView desc = item.findViewById(R.id.tx_quick_desc);
             String descText = quickKeyDesc(bean);
             if (TextUtils.isEmpty(descText)) {
@@ -200,14 +209,11 @@ public class GameFunctionFragment extends BaseGameMenuDialog implements View.OnC
     }
 
     /**
-     * 主标题：内置项取括号前的按键组合（"Ctrl+Shift+ESC (任务管理器)" → "Ctrl+Shift+ESC"），
-     * 用户自定义项取用户输入的名称。
+     * 主标题：取用户输入的名称；名称留空时按钮不显示名称（用户确认：不填写就没有名称）。
+     * 旧版带括号说明的名称（"Ctrl+Shift+ESC (任务管理器)"）仍取括号前的组合键作为标题。
      */
     private static String quickKeyLabel(GameMenuQuickBean bean) {
         String name = bean.getName();
-        if (TextUtils.isEmpty(name)) {
-            name = bean.getDesc();
-        }
         if (TextUtils.isEmpty(name)) {
             return "";
         }
@@ -218,7 +224,7 @@ public class GameFunctionFragment extends BaseGameMenuDialog implements View.OnC
         return name.trim();
     }
 
-    /** 副标题：内置项取括号内的用途说明；用户自定义项取组合键名称（如 Ctrl+Shift+Z）。 */
+    /** 副标题：旧版名称括号内的用途说明；否则取组合键文本（desc，如 Win+Shift+←）。 */
     private static String quickKeyDesc(GameMenuQuickBean bean) {
         String name = bean.getName();
         if (!TextUtils.isEmpty(name)) {
@@ -230,30 +236,30 @@ public class GameFunctionFragment extends BaseGameMenuDialog implements View.OnC
         return bean.getDesc() == null ? "" : bean.getDesc();
     }
 
-    /** 单击：发送组合键并关闭面板（已确认的交互方案 A）。 */
+    /** 单击：发送组合键并关闭全部菜单（「操作」面板与主菜单一并关闭，已确认）。 */
     private void sendQuickKey(GameMenuQuickBean bean) {
         if (bean == null) {
             return;
         }
-        if (!TextUtils.isEmpty(bean.getName())) {
-            Toast.makeText(getActivity(), bean.getName(), Toast.LENGTH_SHORT).show();
+        String toastText = quickKeyMenuTitle(bean);
+        if (!TextUtils.isEmpty(toastText)) {
+            Toast.makeText(getActivity(), toastText, Toast.LENGTH_SHORT).show();
         }
-        // 有 codes 的项（用户自定义项、以及被重新绑定过按键的内置项）走 Android 键码通道，
-        // 与旧 sendQuickKeylist 一致；只有 datas 的内置项与旧版导入项走 VK 码通道，
-        // 与旧「快捷键」列表一致。这样编辑内置项的按键后不会仍发送原来的组合键。
+        // 有 codes 的项（默认组项与用户自定义项）走 Android 键码通道，与「设置快捷键」页
+        // 虚拟键盘录入的按键同源；只有 datas 的旧版导入项走 VK 码通道，与旧「快捷键」列表一致。
         if (!TextUtils.isEmpty(bean.getCodes())) {
             sendQuickKeyCodes(bean.getCodes());
         } else if (conn != null && bean.getDatas() != null && bean.getDatas().length > 0) {
             GameMenuFragment.sendKeys(conn, bean.getDatas());
         }
-        dismiss();
+        dismissAllDialogs();
     }
 
-    /** 长按：编辑 / 删除（内置移入项同样可删除）。 */
+    /** 长按：编辑 / 删除（默认组项与用户添加项行为一致）。 */
     private void showQuickKeyMenu(GameMenuQuickBean bean) {
         String[] actions = new String[]{"编辑", "删除"};
         new AlertDialog.Builder(getActivity())
-                .setTitle(bean.getName())
+                .setTitle(quickKeyMenuTitle(bean))
                 .setItems(actions, (dialog, which) -> {
                     if (which == 0) {
                         openQuickKeyEditor(bean);
@@ -265,19 +271,24 @@ public class GameFunctionFragment extends BaseGameMenuDialog implements View.OnC
                 .show();
     }
 
+    /** 名称留空时菜单标题回落组合键文本，都没有时用通用标题。 */
+    private static String quickKeyMenuTitle(GameMenuQuickBean bean) {
+        String title = quickKeyLabel(bean);
+        if (TextUtils.isEmpty(title)) {
+            title = quickKeyDesc(bean);
+        }
+        return TextUtils.isEmpty(title) ? "自定义快捷键" : title;
+    }
+
     private void confirmDeleteQuickKey(GameMenuQuickBean bean) {
         AppDialog.showConfirm(
                 getActivity(),
-                bean.getName(),
+                quickKeyMenuTitle(bean),
                 "是否删除此键值？",
                 "删除",
                 true,
                 () -> {
-                    if (QuickKeyStore.isBuiltin(bean)) {
-                        QuickKeyStore.hideBuiltin(getActivity(), bean);
-                    } else {
-                        QuickKeyStore.removeCustom(getActivity(), bean);
-                    }
+                    QuickKeyStore.removeCustom(getActivity(), bean);
                     refreshQuickKeys();
                 },
                 null);

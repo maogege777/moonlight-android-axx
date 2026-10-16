@@ -1160,12 +1160,15 @@ public class StreamSettings extends Activity {
         private static final int READ_QUICK_KEYS_REQUEST_CODE = 1009;
         private static final int WRITE_QUICK_KEYS_REQUEST_CODE = 1010;
 
-        /** 导出自定义快捷键到用户选定的文件。 */
+        /** 导出自定义快捷键到用户选定的文件（含默认组项；导出前确保已完成首次初始化）。 */
         private void exportQuickKeys(Uri uri) {
             Activity activity = getActivity();
             if (activity == null) {
                 return;
             }
+            boolean clearDefaultSpecial = PreferenceManager.getDefaultSharedPreferences(activity)
+                    .getBoolean("checkbox_enable_clear_default_special_button", false);
+            com.limelight.ui.gamemenu.QuickKeyStore.ensureSeeded(activity, clearDefaultSpecial);
             String json = com.limelight.ui.gamemenu.QuickKeyStore.exportJson(activity);
             if (TextUtils.isEmpty(json)) {
                 AppDialog.showMessage(activity, "导出自定义快捷键", "没有可导出的自定义快捷键。",
@@ -1178,7 +1181,7 @@ public class StreamSettings extends Activity {
                     getString(R.string.dialog_action_close), null);
         }
 
-        /** 导入自定义快捷键：先确认，再覆盖全部自定义项并恢复内置项的删除状态。 */
+        /** 导入自定义快捷键：先确认，再覆盖全部自定义快捷键（含默认组项）。 */
         private void importQuickKeys(Uri uri) {
             Activity activity = getActivity();
             if (activity == null) {
@@ -1199,10 +1202,8 @@ public class StreamSettings extends Activity {
                             + parsed.custom.size() + " 项。\n建议先导出备份。",
                     "导入", true,
                     () -> {
+                        // v4：导入即全量覆盖（含默认组项），并标记已初始化，导入后不会再追加默认组。
                         com.limelight.ui.gamemenu.QuickKeyStore.replaceAllCustom(activity, parsed.custom);
-                        // replaceAllCustom 会清空整张表，内置项的编辑记录（改名 / 换图标）需要单独恢复。
-                        com.limelight.ui.gamemenu.QuickKeyStore.replaceBuiltinOverrides(activity, parsed.builtinOverrides);
-                        com.limelight.ui.gamemenu.QuickKeyStore.replaceBuiltinHidden(activity, parsed.hiddenBuiltins);
                         AppDialog.showMessage(activity, "导入自定义快捷键",
                                 "导入成功，共 " + parsed.custom.size() + " 项自定义快捷键。",
                                 getString(R.string.dialog_action_close), null);

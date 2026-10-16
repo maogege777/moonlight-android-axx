@@ -22,7 +22,9 @@ foreach ($rel in @(
     "..\app\src\main\res\layout\dialog_game_menu_function.xml",
     "..\app\src\main\res\layout\dialog_game_menu_keyboard_group_add.xml",
     "..\app\src\main\res\layout\item_game_menu_quick_key.xml",
-    "..\app\src\main\res\xml\preferences.xml"
+    "..\app\src\main\res\xml\preferences.xml",
+    # v4: shared opaque dialog panel (8 dialogs share it)
+    "..\app\src\main\res\drawable\bg_update_dialog_panel.xml"
 )) {
     $path = Join-Path $PSScriptRoot $rel
     try {

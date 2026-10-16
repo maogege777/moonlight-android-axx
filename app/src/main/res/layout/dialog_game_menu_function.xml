@@ -57,8 +57,8 @@
             android:layout_height="wrap_content">
 
             <!-- EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN -->
-            <!-- 「自定义快捷键」分组：原主菜单「特色功能 › 快捷键」整体移入此处。
-                 内容（内置项 + 用户添加项）由 GameFunctionFragment 动态填充到 quick_key_container。
+            <!-- 「自定义快捷键」分组：默认组（首次运行时初始化）+ 用户添加项，
+                 全部由 GameFunctionFragment 动态填充到 quick_key_container 并被导出 / 导入覆盖。
                  标题旁带操作说明；下方「快捷操作」等原有分组不加说明。 -->
             <LinearLayout
                 android:layout_marginTop="10dp"
@@ -81,7 +81,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="单击＝发送并关闭面板 · 长按＝编辑 / 删除"
+                    android:text="单击＝发送并关闭菜单 · 长按＝编辑 / 删除"
                     android:textColor="#E8A04A"
                     android:textSize="8dp" />
 

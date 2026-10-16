@@ -537,6 +537,10 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                     sessionTelemetryRunnable, SESSION_TELEMETRY_LOG_INTERVAL_MS);
         }
         logSessionInfo("LIFECYCLE", "串流页面已创建");
+        // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
+        // 自定义快捷键 v4：安装后首次运行时初始化默认组（QuickKeyStore 内部只执行一次）。
+        com.limelight.ui.gamemenu.QuickKeyStore.ensureSeeded(this, prefConfig.enableClearDefaultSpecial);
+        // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
         if (backgroundReconnectAttempt > 0) {
             logSessionInfo("CONNECT", "开始后台回连，第 " + backgroundReconnectAttempt + "/"
                     + MAX_BACKGROUND_RECONNECT_ATTEMPTS + " 次");

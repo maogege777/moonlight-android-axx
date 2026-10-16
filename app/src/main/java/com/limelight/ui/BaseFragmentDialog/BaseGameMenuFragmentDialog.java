@@ -140,6 +140,32 @@ public abstract class BaseGameMenuFragmentDialog extends DialogFragment {
         return false;
     }
 
+    /**
+     * 关闭当前全部串流菜单弹窗（EXT-QUICK-KEYS-IN-OPERATIONS v4）：
+     * 「操作」面板里的自定义快捷键单击发送后，连同下层主菜单一起关闭，
+     * 而不是只关闭一层回到主菜单。
+     */
+    public static void dismissAllDialogs() {
+        List<BaseGameMenuFragmentDialog> targets = new ArrayList<>();
+        synchronized (ACTIVE_DIALOGS) {
+            for (WeakReference<BaseGameMenuFragmentDialog> ref : ACTIVE_DIALOGS) {
+                BaseGameMenuFragmentDialog fragment = ref.get();
+                if (fragment != null && fragment.getDialog() != null &&
+                        fragment.getDialog().isShowing()) {
+                    targets.add(fragment);
+                }
+            }
+            ACTIVE_DIALOGS.clear();
+        }
+        for (BaseGameMenuFragmentDialog fragment : targets) {
+            try {
+                fragment.dismiss();
+            } catch (IllegalStateException ignored) {
+                // 已处于状态保存之后，dismiss 不可用；此时窗口层由系统处理
+            }
+        }
+    }
+
     private static void removeInactiveDialogs(BaseGameMenuFragmentDialog target) {
         for (int i = ACTIVE_DIALOGS.size() - 1; i >= 0; i--) {
             BaseGameMenuFragmentDialog fragment = ACTIVE_DIALOGS.get(i).get();

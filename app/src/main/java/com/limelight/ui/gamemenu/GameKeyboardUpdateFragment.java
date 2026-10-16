@@ -94,6 +94,10 @@ public class GameKeyboardUpdateFragment extends BaseGameMenuDialog implements Vi
         if(!TextUtils.isEmpty(title)){
             tx_title.setText(title);
         }
+        // 自定义快捷键（keyFrom==1）名称可留空，提示语与组合键页区分（用户确认）。
+        if(keyFrom==1){
+            edt_name.setHint("按键名称（可留空，留空则按钮不显示名称）");
+        }
         ibtn_back.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -202,7 +206,11 @@ public class GameKeyboardUpdateFragment extends BaseGameMenuDialog implements Vi
                         contentValues.append(Integer.parseInt(tag));
                         contentNames.append(view.getText().toString().trim());
                         tx_content.setText(contentNames.toString());
-                        edt_name.setText(contentNames.toString());
+                        // 自定义快捷键（keyFrom==1）名称由用户自行决定、可以留空，
+                        // 点按键不再自动覆盖名称框；组合键页保持旧的自动填充行为。
+                        if(keyFrom==0){
+                            edt_name.setText(contentNames.toString());
+                        }
                         return true;
                 }
                 return false;
@@ -376,12 +384,10 @@ public class GameKeyboardUpdateFragment extends BaseGameMenuDialog implements Vi
     @Override
     public void onClick(View v) {
         if(v.getId()==R.id.btn_right){
-            String name=edt_name.getText().toString();
-            //快捷键列表
-            if(keyFrom==1){
-                name=name.trim();
-            }
-            if(TextUtils.isEmpty(name)){
+            String name=edt_name.getText().toString().trim();
+            // 自定义快捷键（keyFrom==1）名称允许留空：界面按钮只按图标+组合键显示（用户确认）。
+            // 虚拟按键 / 手柄按键的组合键（keyFrom==0）仍要求名称。
+            if(TextUtils.isEmpty(name) && keyFrom==0){
                 Toast.makeText(getActivity(),"请输入名称！",Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -427,10 +433,10 @@ public class GameKeyboardUpdateFragment extends BaseGameMenuDialog implements Vi
             return;
         }
         if(v.getId()==R.id.btn_reset){
+            // 「清空按键」：只清空已录入的组合键，保留按键名称（用户确认）。
             contentValues.delete(0,contentValues.length());
             contentNames.delete(0,contentNames.length());
             tx_content.setText("");
-            edt_name.setText("");
             return;
         }
     }
