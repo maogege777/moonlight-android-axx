@@ -10,12 +10,17 @@
 ## v4 changes (user-confirmed, 2026-10-16)
 
 1. **Default keys are seeded data, not injected built-ins.** On the first run after install the
-   app writes one default group (10 common Windows combos, empty names, fixed ids with the
-   `quick_assemble_key_seed_` prefix) into the normal user store, once (guarded by a `seeded`
-   flag in the meta file `quick_axi_keyAssemble_meta`). Afterwards they are ordinary entries:
-   editable, deletable, exported and imported like anything the user adds. Import no longer
-   "resets" anything - it replaces everything, and a successful import also marks the store as
-   seeded so the default group is never appended again.
+   app writes one default group into the normal user store, once (guarded by a `seeded` flag in
+   the meta file `quick_axi_keyAssemble_meta`): the original 11 built-in Windows combos from the
+   old "Quick keys" list, with names, icons and VK combinations kept verbatim (e.g.
+   "ESC (退出/菜单)"; fixed ids with the `quick_assemble_key_seed_` prefix). Afterwards they are
+   ordinary entries: editable, deletable, exported and imported like anything the user adds.
+   Import no longer "resets" anything - it replaces everything, and a successful import also
+   marks the store as seeded so the default group is never appended again.
+   `seed_version` version-guards the definition: the short-lived name-less v1 definition (one
+   build on 2026-10-16) is upgraded once by `migrateSeedItems`, which restores names and VK
+   combinations only for seed items whose name is still empty - user-renamed and user-deleted
+   entries are left alone.
 2. **The editor's reset button is "清空按键" (clear keys only)** - it clears the captured
    combination but keeps the entered name.
 3. **Names may be empty.** Saving a quick key without a name is allowed (virtual/gamepad
@@ -30,7 +35,8 @@
 ## User-visible behavior (current)
 
 - The main menu has no "Quick keys" entry; the sidebar "Operations" panel starts with a
-  "自定义快捷键" group holding the seeded default group plus the user's own combos.
+  "自定义快捷键" group holding the seeded default group (the old 11 built-in combos, same names
+  and icons) plus the user's own combos.
 - Grid buttons show an icon, the name when one was entered, and the combination text below;
   tapping sends the combination and closes all menus, long-pressing opens Edit / Delete.
 - The panel's top-right "Add" button opens the combination editor with the optional SVG icon
@@ -56,7 +62,8 @@
 - User entries incl. the seeded group: SharedPreferences `quick_axi_keyAssemble`, key prefix
   `quick_assemble_key_`, values `GameMenuQuickBean` JSON (Gson tolerates `icon`/`sort`).
   Seeded ids use the fixed `quick_assemble_key_seed_` prefix.
-- `quick_axi_keyAssemble_meta` holds the one-shot `seeded` flag.
+- `quick_axi_keyAssemble_meta` holds the one-shot `seeded` flag and the `seed_version` of the
+  default-group definition (see item 1 for the v1 → v2 name-restoration migration).
 - v3 leftovers no longer read or written: the `builtin_` override records (skipped on load, ids
   rewritten on import) and `quick_builtin_hidden`. Old installs keep their user entries; the old
   injected built-ins simply disappear and the seeded group appears instead (only when the store
@@ -64,11 +71,12 @@
 
 ## Sending constraint
 
-- A user entry's `codes` are Android key codes (same source as the editor's on-screen keyboard
-  tags); `GameFunctionFragment.sendQuickKey` sends them through `Game.keyboardEvent`, which
-  translates to VK codes via `KeyboardTranslator` - the seeded group therefore behaves exactly
-  like the old built-in VK list. Entries imported from old files that only carry `datas` still
-  take the VK path.
+- User entries added through the editor carry `codes` (Android key codes, same source as the
+  editor's on-screen keyboard tags); `GameFunctionFragment.sendQuickKey` sends them through
+  `Game.keyboardEvent`, which translates to VK codes via `KeyboardTranslator`.
+- The seeded default group carries VK-code `datas` exactly like the old built-in list, so
+  `sendQuickKey` routes it through `GameMenuFragment.sendKeys` - identical behavior to the old
+  "Quick keys" panel. Entries imported from old files that only carry `datas` take the same path.
 
 ## Import/export format
 

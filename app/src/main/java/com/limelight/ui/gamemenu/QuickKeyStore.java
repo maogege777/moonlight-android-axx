@@ -7,6 +7,7 @@ import android.text.TextUtils;
 
 import com.google.gson.Gson;
 import com.limelight.R;
+import com.limelight.binding.input.KeyboardTranslator;
 import com.limelight.ui.gamemenu.bean.GameMenuQuickBean;
 
 import org.json.JSONArray;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +51,11 @@ public final class QuickKeyStore {
     public static final String SEED_ID_PREFIX = PREF_QUICK_LIST_KEY + "seed_";
 
     private static final String SEED_KEY = "seeded";
+    // 默认组定义的版本号：v1 = 名称留空的临时版本（仅存在于 2026-10-16 的一次构建中），
+    // v2 = 恢复原「快捷键」内置项名称与组合键的正式版本。版本升级时对未被用户编辑过的
+    // 默认组项补回名称，已删除或已改名的项不动。
+    private static final String SEED_VERSION_KEY = "seed_version";
+    private static final int CURRENT_SEED_VERSION = 2;
 
     public static final String EXPORT_TYPE = "axi_quick_keys";
     public static final int EXPORT_VERSION = 2;
@@ -62,32 +69,41 @@ public final class QuickKeyStore {
     // ---------------------------------------------------------------- 默认组（seed）
 
     /**
-     * 默认快捷键组：与旧内置列表等价的常用 Windows 组合键，但以普通自定义数据的形式存在。
-     * codes 使用「设置快捷键」页虚拟键盘的 Android 键码（与用户自行录入的组合键同源），
-     * 发送时经 KeyboardTranslator 翻译为 VK 码，与旧内置项的发送结果一致。
-     * 名称一律留空（用户确认：名称可留空，按钮只显示图标 + 组合键），desc 为组合键文本。
+     * 默认快捷键组：即原「快捷键」列表的 11 项内置 Windows 组合键，迁移为首次运行写入的
+     * 普通自定义数据。名称、图标、组合键与旧内置项逐字一致（如 "ESC (退出/菜单)"），
+     * 界面按旧格式拆分显示（主行 ESC，副行 退出/菜单）。组合键沿用旧内置项的 VK 码 datas，
+     * 发送走与旧「快捷键」列表相同的 GameMenuFragment.sendKeys 通道。
      */
     public static List<GameMenuQuickBean> defaultItems() {
         List<GameMenuQuickBean> items = new ArrayList<>();
-        items.add(seed("esc", "111", "ESC", "qk_esc"));
-        items.add(seed("alt_tab", "57,61", "Alt+Tab", "qk_window"));
-        items.add(seed("win", "117", "Win", "qk_win"));
-        items.add(seed("win_e", "117,33", "Win+E", "qk_monitor"));
-        items.add(seed("win_i", "117,37", "Win+I", "qk_default"));
-        items.add(seed("alt_f4", "57,134", "Alt+F4", "qk_close"));
-        items.add(seed("win_d", "117,32", "Win+D", "qk_desktop"));
-        items.add(seed("win_shift_left", "117,59,21", "Win+Shift+←", "qk_vdesk"));
-        items.add(seed("ctrl_shift_esc", "113,59,111", "Ctrl+Shift+Esc", "qk_taskmgr"));
-        items.add(seed("win_g", "117,35", "Win+G", "qk_gamebar"));
+        items.add(seed("esc", "ESC (退出/菜单)", "qk_esc",
+                new short[]{KeyboardTranslator.VK_ESCAPE}));
+        items.add(seed("f11", "F11 (网页全屏)", "qk_f11",
+                new short[]{KeyboardTranslator.VK_F11}));
+        items.add(seed("alt_f4", "Alt + F4 (关闭应用)", "qk_close",
+                new short[]{KeyboardTranslator.VK_LMENU, KeyboardTranslator.VK_F4}));
+        items.add(seed("alt_enter", "Alt + Enter (窗口大小)", "qk_winresize",
+                new short[]{KeyboardTranslator.VK_LMENU, KeyboardTranslator.VK_RETURN}));
+        items.add(seed("win", "Win (打开Windows开始菜单)", "qk_win",
+                new short[]{KeyboardTranslator.VK_LWIN}));
+        items.add(seed("ctrl_shift_esc", "Ctrl+Shift+ESC (任务管理器)", "qk_taskmgr",
+                new short[]{KeyboardTranslator.VK_LCONTROL, KeyboardTranslator.VK_LSHIFT, KeyboardTranslator.VK_ESCAPE}));
+        items.add(seed("win_d", "Win + D (返回桌面)", "qk_desktop",
+                new short[]{KeyboardTranslator.VK_LWIN, KeyboardTranslator.VK_D}));
+        items.add(seed("win_p", "Win + P (显示器模式)", "qk_proj",
+                new short[]{KeyboardTranslator.VK_LWIN, KeyboardTranslator.VK_P}));
+        items.add(seed("win_g", "Win + G (打开Xbox Game Bar)", "qk_gamebar",
+                new short[]{KeyboardTranslator.VK_LWIN, KeyboardTranslator.VK_G}));
+        items.add(seed("shift_tab", "Shift + Tab (打开Steam Overlay)", "qk_steam",
+                new short[]{KeyboardTranslator.VK_LSHIFT, KeyboardTranslator.VK_TAB}));
+        items.add(seed("win_shift_left", "Win + Shift + left (切换桌面)", "qk_vdesk",
+                new short[]{KeyboardTranslator.VK_LWIN, KeyboardTranslator.VK_LSHIFT, KeyboardTranslator.VK_LEFT}));
         return items;
     }
 
-    private static GameMenuQuickBean seed(String suffix, String codes, String desc, String icon) {
-        GameMenuQuickBean bean = new GameMenuQuickBean();
+    private static GameMenuQuickBean seed(String suffix, String name, String icon, short[] datas) {
+        GameMenuQuickBean bean = new GameMenuQuickBean(name, datas);
         bean.setId(SEED_ID_PREFIX + suffix);
-        bean.setName("");
-        bean.setCodes(codes);
-        bean.setDesc(desc);
         bean.setIcon(icon);
         bean.setBtnType(4);
         return bean;
@@ -101,9 +117,14 @@ public final class QuickKeyStore {
     public static void ensureSeeded(Context context, boolean clearDefaultSpecial) {
         SharedPreferences meta = context.getSharedPreferences(PREF_META_NAME, Activity.MODE_PRIVATE);
         if (meta.getBoolean(SEED_KEY, false)) {
+            if (meta.getInt(SEED_VERSION_KEY, 0) < CURRENT_SEED_VERSION) {
+                migrateSeedItems(context, meta);
+            }
             return;
         }
-        meta.edit().putBoolean(SEED_KEY, true).apply();
+        meta.edit().putBoolean(SEED_KEY, true)
+                .putInt(SEED_VERSION_KEY, CURRENT_SEED_VERSION)
+                .apply();
 
         SharedPreferences pref = context.getSharedPreferences(PREF_QUICK_LIST_NAME, Activity.MODE_PRIVATE);
         for (String key : pref.getAll().keySet()) {
@@ -123,10 +144,59 @@ public final class QuickKeyStore {
         editor.apply();
     }
 
+    /**
+     * 默认组定义升级（v1 名称留空的临时版本 → v2 原「快捷键」11 项完整版本）。
+     * - 存储中名称仍为空（用户没改过名）的 seed 项：替换为新定义，排列位置按新定义顺序；
+     * - 用户改过名称的 seed 项：完全不动；
+     * - 新定义里没有、且名称仍为空的旧 seed 项（v1 多出的 alt_tab / win_e / win_i）：移除；
+     * - 新定义里有、但存储中没有的项：补写（v1 版本本来就没种过 f11 / alt_enter / win_p / shift_tab）。
+     * 用户自己添加的项（非 seed_ 前缀）不受影响。
+     */
+    private static void migrateSeedItems(Context context, SharedPreferences meta) {
+        SharedPreferences pref = context.getSharedPreferences(PREF_QUICK_LIST_NAME, Activity.MODE_PRIVATE);
+        Map<String, String> all = (Map<String, String>) pref.getAll();
+
+        List<GameMenuQuickBean> defs = defaultItems();
+        Map<String, GameMenuQuickBean> defById = new HashMap<>();
+        int sort = 1;
+        for (GameMenuQuickBean bean : defs) {
+            bean.setSort(sort++);
+            defById.put(bean.getId(), bean);
+        }
+
+        SharedPreferences.Editor editor = pref.edit();
+        for (Map.Entry<String, String> entry : all.entrySet()) {
+            if (!entry.getKey().startsWith(SEED_ID_PREFIX)) {
+                continue;
+            }
+            GameMenuQuickBean stored = fromJson(entry.getValue());
+            if (stored == null) {
+                continue;
+            }
+            if (!TextUtils.isEmpty(stored.getName())) {
+                continue; // 用户改过名称：保留用户数据
+            }
+            GameMenuQuickBean def = defById.get(entry.getKey());
+            if (def != null) {
+                editor.putString(def.getId(), new Gson().toJson(def));
+            } else {
+                editor.remove(entry.getKey());
+            }
+        }
+        for (GameMenuQuickBean def : defs) {
+            if (!all.containsKey(def.getId())) {
+                editor.putString(def.getId(), new Gson().toJson(def));
+            }
+        }
+        editor.apply();
+        meta.edit().putInt(SEED_VERSION_KEY, CURRENT_SEED_VERSION).apply();
+    }
+
     /** 导入成功即视为已初始化，防止导入后再次追加默认组。 */
     public static void markSeeded(Context context) {
         context.getSharedPreferences(PREF_META_NAME, Activity.MODE_PRIVATE).edit()
                 .putBoolean(SEED_KEY, true)
+                .putInt(SEED_VERSION_KEY, CURRENT_SEED_VERSION)
                 .apply();
     }
 
