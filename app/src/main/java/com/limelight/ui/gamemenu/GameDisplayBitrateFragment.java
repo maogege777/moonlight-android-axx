@@ -42,8 +42,12 @@ public class GameDisplayBitrateFragment extends BaseGameMenuDialog implements Vi
         ibtn_back.setOnClickListener(this);
         v.findViewById(R.id.btn_right).setOnClickListener(this);
 
-        for (int i = 0; i < 7; i++) {
+        // 常用码率预设按钮数量与 dialog_game_menu_display_bitrate.xml 中的 tag 0..10 保持一致
+        for (int i = 0; i < 11; i++) {
             TextView textView=v.findViewWithTag(""+i);
+            if (textView == null) {
+                continue;
+            }
             textView.setOnClickListener(v1 -> {
                 String txt=textView.getText().toString().trim();
                 txt=txt.replace("mbps","");

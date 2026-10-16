@@ -130,6 +130,54 @@
                         android:gravity="center"
                         android:tag="0"
                         android:textColor="@android:color/white"
+                        android:text="4mbps"
+                        android:textSize="9sp" />
+
+                    <TextView
+                        android:layout_width="60dp"
+                        android:layout_height="28dp"
+                        android:layout_marginRight="4dp"
+                        android:layout_marginTop="5dp"
+                        android:background="@drawable/ic_game_menu_btn_selector"
+                        android:gravity="center"
+                        android:tag="1"
+                        android:textColor="@android:color/white"
+                        android:text="6mbps"
+                        android:textSize="9sp" />
+
+                    <TextView
+                        android:layout_width="60dp"
+                        android:layout_height="28dp"
+                        android:layout_marginRight="4dp"
+                        android:layout_marginTop="5dp"
+                        android:background="@drawable/ic_game_menu_btn_selector"
+                        android:gravity="center"
+                        android:tag="2"
+                        android:textColor="@android:color/white"
+                        android:text="8mbps"
+                        android:textSize="9sp" />
+
+                    <TextView
+                        android:layout_width="60dp"
+                        android:layout_height="28dp"
+                        android:layout_marginRight="4dp"
+                        android:layout_marginTop="5dp"
+                        android:background="@drawable/ic_game_menu_btn_selector"
+                        android:gravity="center"
+                        android:tag="3"
+                        android:textColor="@android:color/white"
+                        android:text="10mbps"
+                        android:textSize="9sp" />
+
+                    <TextView
+                        android:layout_width="60dp"
+                        android:layout_height="28dp"
+                        android:layout_marginRight="4dp"
+                        android:layout_marginTop="5dp"
+                        android:background="@drawable/ic_game_menu_btn_selector"
+                        android:gravity="center"
+                        android:tag="4"
+                        android:textColor="@android:color/white"
                         android:text="20mbps"
                         android:textSize="9sp" />
 
@@ -142,7 +190,7 @@
                         android:background="@drawable/ic_game_menu_btn_selector"
                         android:gravity="center"
                         android:text="50mbps"
-                        android:tag="1"
+                        android:tag="5"
                         android:textSize="9sp" />
 
                     <TextView
@@ -154,7 +202,7 @@
                         android:gravity="center"
                         android:textColor="@android:color/white"
                         android:text="60mbps"
-                        android:tag="2"
+                        android:tag="6"
                         android:textSize="9sp" />
 
                     <TextView
@@ -166,7 +214,7 @@
                         android:gravity="center"
                         android:textColor="@android:color/white"
                         android:text="100mbps"
-                        android:tag="3"
+                        android:tag="7"
                         android:textSize="9sp" />
 
                     <TextView
@@ -177,7 +225,7 @@
                         android:background="@drawable/ic_game_menu_btn_selector"
                         android:gravity="center"
                         android:text="150mbps"
-                        android:tag="4"
+                        android:tag="8"
                         android:textColor="@android:color/white"
                         android:textSize="9sp" />
 
@@ -189,7 +237,7 @@
                         android:background="@drawable/ic_game_menu_btn_selector"
                         android:gravity="center"
                         android:text="200mbps"
-                        android:tag="5"
+                        android:tag="9"
                         android:textColor="@android:color/white"
                         android:textSize="9sp" />
 
@@ -201,7 +249,7 @@
                         android:background="@drawable/ic_game_menu_btn_selector"
                         android:gravity="center"
                         android:text="300mbps"
-                        android:tag="6"
+                        android:tag="10"
                         android:textColor="@android:color/white"
                         android:textSize="9sp" />
 

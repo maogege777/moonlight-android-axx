@@ -748,7 +748,8 @@ public class SettingsPanelDialog extends BaseGameMenuFragmentDialog {
         input.setFilters(new android.text.InputFilter[] {new android.text.InputFilter.LengthFilter(9)});
         heading(getString(R.string.settings_panel_bitrate_presets));
         FlowLayout presets = new FlowLayout(getActivity());
-        for (int value : new int[] {20, 50, 60, 100, 150, 200, 300}) {
+        // 4/6/8/10 为新增低码率预设，排在 20 之前
+        for (int value : new int[] {4, 6, 8, 10, 20, 50, 60, 100, 150, 200, 300}) {
             TextView button = text(value + " Mbps", 12, Color.WHITE);
             button.setGravity(Gravity.CENTER);
             button.setMinHeight(dp(40));
