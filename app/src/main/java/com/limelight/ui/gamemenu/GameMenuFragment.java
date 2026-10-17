@@ -5,10 +5,24 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Handler;
+import android.os.Looper;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,6 +41,11 @@ import com.limelight.ui.BaseFragmentDialog.BaseGameMenuDialog;
 import com.limelight.utils.UiHelper;
 
 import java.security.Key;
+
+import static com.limelight.binding.input.virtual_controller.keyboard.KeyBoardControllerConfigurationLoader.OSC_GAMEPAD_PREFERENCE;
+import static com.limelight.binding.input.virtual_controller.keyboard.KeyBoardControllerConfigurationLoader.OSC_GAMEPAD_PREFERENCE_VALUE;
+import static com.limelight.binding.input.virtual_controller.keyboard.KeyBoardControllerConfigurationLoader.OSC_PREFERENCE;
+import static com.limelight.binding.input.virtual_controller.keyboard.KeyBoardControllerConfigurationLoader.OSC_PREFERENCE_VALUE;
 /**
  * Description
  * Date: 2024-10-20
@@ -52,6 +71,19 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
 
     private Button btn_screen_move;
 
+    // EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [NEW] BEGIN
+    // 虚拟手柄 / 虚拟按键 的「长按切换布局方案」相关状态。
+    private SchemeBadgeView badge_game_pad;
+    private SchemeBadgeView badge_v_keyboard;
+    /** 长按阈值：原生 onLongClick 固定 500ms，按需求提前到 200ms */
+    private static final int SCHEME_LONG_PRESS_DELAY_MS = 200;
+    private final Handler schemePressHandler = new Handler(Looper.getMainLooper());
+    private Runnable schemeLongPressRunnable;
+    /** 长按已触发时置位，用于吞掉松手后补发的 onClick（避免又切换一次显隐） */
+    private boolean schemeLongPressFired;
+    private PopupWindow schemePopup;
+    // EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [NEW] END
+
     private TextView tx_title_battery;
 
     private Game game;
@@ -64,12 +96,21 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
         btn_game_pad=v.findViewById(R.id.btn_game_pad);
         btn_v_keyboard=v.findViewById(R.id.btn_v_keyboard);
         btn_screen_move=v.findViewById(R.id.btn_screen_move);
+        // EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [NEW] BEGIN
+        badge_game_pad=v.findViewById(R.id.badge_game_pad);
+        badge_v_keyboard=v.findViewById(R.id.badge_v_keyboard);
+        // EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [NEW] END
         if(game!=null){
             btn_performance.setBackgroundResource(game.prefConfig.enablePerfOverlay?R.drawable.ic_game_menu_btn_green_selector:R.drawable.ic_game_menu_btn_selector);
             btn_game_pad.setBackgroundResource(game.prefConfig.onscreenController?R.drawable.ic_game_menu_btn_green_selector:R.drawable.ic_game_menu_btn_selector);
             btn_v_keyboard.setBackgroundResource(game.prefConfig.enableKeyboard?R.drawable.ic_game_menu_btn_green_selector:R.drawable.ic_game_menu_btn_selector);
             btn_screen_move.setBackgroundResource(game.getScreenMoveZoom()?R.drawable.ic_game_menu_btn_green_selector:R.drawable.ic_game_menu_btn_selector);
         }
+        // EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [NEW] BEGIN
+        attachSchemeLongPress(btn_game_pad, true);
+        attachSchemeLongPress(btn_v_keyboard, false);
+        refreshSchemeBadges();
+        // EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [NEW] END
         v.findViewById(R.id.btn_unlink).setOnClickListener(this);
         v.findViewById(R.id.btn_exit).setOnClickListener(this);
         v.findViewById(R.id.btn_swicth_screen).setOnClickListener(this);
@@ -261,9 +302,18 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
             return;
         }
         if(v.getId()==R.id.btn_game_pad){
+            // EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [MODIFIED] BEGIN
+            // 长按已弹出方案浮层时，松手补发的这次 click 直接丢弃，不再切换显隐
+            if(schemeLongPressFired){
+                schemeLongPressFired=false;
+                return;
+            }
+            // EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [MODIFIED] END
             if(game!=null){
                 game.showHideVirtualController();
                 btn_game_pad.setBackgroundResource(game.prefConfig.onscreenController?R.drawable.ic_game_menu_btn_green_selector:R.drawable.ic_game_menu_btn_selector);
+                // EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [NEW]
+                refreshSchemeBadges();
             }
             return;
         }
@@ -277,9 +327,17 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
         }
 
         if(v.getId()==R.id.btn_v_keyboard){
+            // EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [MODIFIED] BEGIN
+            if(schemeLongPressFired){
+                schemeLongPressFired=false;
+                return;
+            }
+            // EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [MODIFIED] END
             if(game!=null){
                 game.showHideKeyboardController();
                 btn_v_keyboard.setBackgroundResource(game.prefConfig.enableKeyboard?R.drawable.ic_game_menu_btn_green_selector:R.drawable.ic_game_menu_btn_selector);
+                // EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [NEW]
+                refreshSchemeBadges();
             }
             return;
         }
@@ -617,4 +675,291 @@ public class GameMenuFragment extends BaseGameMenuDialog implements View.OnClick
     // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] BEGIN
     // sendQuickKeylist() 已随「快捷键」入口一并移入 GameFunctionFragment（自定义快捷键发送逻辑）。
     // EXTENSION DEVELOPMENT [EXT-QUICK-KEYS-IN-OPERATIONS] [MODIFIED] END
+
+    // EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [NEW] BEGIN
+    // ==================== 长按切换虚拟手柄 / 虚拟按键布局方案 ====================
+    // 交互约定：
+    //   短按  → 保持原有「显示/隐藏」行为，按钮绿色高亮同步（行为零改动）
+    //   长按  → 200ms 后在按钮正下方（空间不足则正上方）弹出方案列表，就近点选
+    //   选中  → 写 pref（gamepad_axi_list / keyboard_axi_list）→ 刷新角标 → 热重载布局
+    // 与二级面板「虚拟手柄与虚拟按键」里的 RadioGroup 共用同一份 pref，两处始终一致。
+
+    /**
+     * 给按钮挂上 200ms 长按判定。
+     * 用 OnTouchListener + Handler 而不是 setOnLongClickListener，是因为原生长按固定 500ms，
+     * 且这里需要在长按后吞掉补发的 click；返回 false 保证短按仍走原有 OnClickListener。
+     */
+    private void attachSchemeLongPress(final Button btn, final boolean isGamePad) {
+        if (btn == null) {
+            return;
+        }
+        btn.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getActionMasked()) {
+                    case MotionEvent.ACTION_DOWN:
+                        cancelSchemeLongPress();
+                        schemeLongPressFired = false;
+                        scheduleSchemeLongPress(v, isGamePad);
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        // 手指滑出按钮范围视为放弃长按，避免误弹
+                        if (event.getX() < 0 || event.getY() < 0
+                                || event.getX() > v.getWidth() || event.getY() > v.getHeight()) {
+                            cancelSchemeLongPress();
+                        }
+                        break;
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_CANCEL:
+                        cancelSchemeLongPress();
+                        break;
+                    default:
+                        break;
+                }
+                return false;
+            }
+        });
+    }
+
+    private void scheduleSchemeLongPress(final View anchor, final boolean isGamePad) {
+        schemeLongPressRunnable = new Runnable() {
+            @Override
+            public void run() {
+                schemeLongPressFired = true;
+                if (isAdded() && anchor != null) {
+                    showSchemePopup(anchor, isGamePad);
+                }
+            }
+        };
+        schemePressHandler.postDelayed(schemeLongPressRunnable, SCHEME_LONG_PRESS_DELAY_MS);
+    }
+
+    private void cancelSchemeLongPress() {
+        if (schemeLongPressRunnable != null) {
+            schemePressHandler.removeCallbacks(schemeLongPressRunnable);
+            schemeLongPressRunnable = null;
+        }
+    }
+
+    private void dismissSchemePopup() {
+        if (schemePopup != null) {
+            try {
+                schemePopup.dismiss();
+            } catch (Exception ignored) {
+                // 窗口已脱离，忽略
+            }
+            schemePopup = null;
+        }
+    }
+
+    /**
+     * 在 anchor 就近弹出方案列表：优先按钮正下方，底部空间不足时翻到正上方，
+     * 水平方向以按钮中心对齐并夹在屏幕安全边距内。
+     */
+    private void showSchemePopup(final View anchor, final boolean isGamePad) {
+        final Context ctx = getActivity();
+        if (ctx == null || anchor == null) {
+            return;
+        }
+        dismissSchemePopup();
+
+        final String[] names = getResources().getStringArray(
+                isGamePad ? R.array.gamepad_axi_names : R.array.keyboard_axi_names);
+        final String[] values = getResources().getStringArray(
+                isGamePad ? R.array.gamepad_axi_values : R.array.keyboard_axi_values);
+        final String prefKey = isGamePad ? OSC_GAMEPAD_PREFERENCE : OSC_PREFERENCE;
+        final String defValue = isGamePad ? OSC_GAMEPAD_PREFERENCE_VALUE : OSC_PREFERENCE_VALUE;
+        final String current = PreferenceManager.getDefaultSharedPreferences(ctx)
+                .getString(prefKey, defValue);
+        final int currentIndex = indexOfValue(values, current);
+
+        LinearLayout root = new LinearLayout(ctx);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundResource(R.drawable.bg_osc_scheme_popup);
+        root.setPadding(dpToPx(8), dpToPx(6), dpToPx(8), dpToPx(6));
+
+        TextView header = new TextView(ctx);
+        header.setText(isGamePad ? "虚拟手柄布局方案" : "虚拟按键布局方案");
+        header.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        header.setTextColor(0xFF9C9CA0);
+        header.setPadding(dpToPx(4), dpToPx(4), dpToPx(4), dpToPx(6));
+        root.addView(header);
+
+        for (int i = 0; i < names.length; i++) {
+            final int index = i;
+            root.addView(createSchemeRow(ctx, i + 1, names[i], i == currentIndex,
+                    new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            applyScheme(isGamePad, values, prefKey, index);
+                        }
+                    }));
+        }
+
+        final int popupWidth = dpToPx(168);
+        final PopupWindow popup = new PopupWindow(root, popupWidth,
+                ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        // 透明背景是「点外部自动关闭」在低版本上生效的前提
+        popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        popup.setOutsideTouchable(true);
+        popup.setFocusable(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            popup.setElevation(dpToPx(8));
+        }
+
+        // 先量出真实高度，才能判断向上还是向下弹
+        root.measure(View.MeasureSpec.makeMeasureSpec(popupWidth, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        final int popupHeight = root.getMeasuredHeight();
+
+        // showAsDropDown 的偏移是相对 anchor 在屏幕上的位置计算的，
+        // 因此这里统一用「屏幕坐标 + 屏幕尺寸」，不能混用 Dialog 窗口（右侧 364dp 面板）的宽高。
+        final int[] loc = new int[2];
+        anchor.getLocationOnScreen(loc);
+
+        final int containerW = getResources().getDisplayMetrics().widthPixels;
+        final int containerH = getResources().getDisplayMetrics().heightPixels;
+
+        final int margin = dpToPx(8);
+        int xoff = (anchor.getWidth() - popupWidth) / 2;
+        final int left = loc[0] + xoff;
+        if (left < margin) {
+            xoff += margin - left;
+        } else if (left + popupWidth > containerW - margin) {
+            xoff -= (left + popupWidth) - (containerW - margin);
+        }
+
+        final int gap = dpToPx(6);
+        final int spaceBelow = containerH - (loc[1] + anchor.getHeight());
+        final int yoff;
+        if (spaceBelow >= popupHeight + gap + margin) {
+            yoff = gap;                                              // 正下方
+        } else {
+            yoff = -(anchor.getHeight() + popupHeight + gap);        // 翻到正上方
+        }
+
+        schemePopup = popup;
+        popup.showAsDropDown(anchor, xoff, yoff);
+    }
+
+    /** 单行方案：左侧数字小方块 + 名称，当前方案额外显示对勾并高亮。 */
+    private View createSchemeRow(Context ctx, int number, String label, boolean selected,
+                                 View.OnClickListener listener) {
+        LinearLayout row = new LinearLayout(ctx);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dpToPx(6), dpToPx(9), dpToPx(6), dpToPx(9));
+        row.setOnClickListener(listener);
+
+        if (selected) {
+            GradientDrawable rowBg = new GradientDrawable();
+            rowBg.setCornerRadius(dpToPx(6));
+            rowBg.setColor(0xFF232B1A);
+            row.setBackground(rowBg);
+        }
+
+        TextView chip = new TextView(ctx);
+        chip.setText(String.valueOf(number));
+        chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+        chip.setTypeface(Typeface.DEFAULT_BOLD);
+        chip.setGravity(Gravity.CENTER);
+        chip.setTextColor(0xFFFFFFFF);
+        GradientDrawable chipBg = new GradientDrawable();
+        chipBg.setCornerRadius(dpToPx(3));
+        chipBg.setColor(selected ? 0xFF79B033 : 0xFF3C3C40);
+        chip.setBackground(chipBg);
+        LinearLayout.LayoutParams chipLp =
+                new LinearLayout.LayoutParams(dpToPx(16), dpToPx(16));
+        chipLp.rightMargin = dpToPx(8);
+        row.addView(chip, chipLp);
+
+        TextView text = new TextView(ctx);
+        text.setText(label);
+        text.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        text.setTextColor(selected ? 0xFF96D341 : 0xFFE6E6E6);
+        if (selected) {
+            text.setTypeface(Typeface.DEFAULT_BOLD);
+        }
+        row.addView(text, new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        if (selected) {
+            TextView check = new TextView(ctx);
+            check.setText("✓");
+            check.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+            check.setTextColor(0xFF96D341);
+            row.addView(check);
+        }
+        return row;
+    }
+
+    /** 写入方案 pref 并热重载；与「虚拟手柄与虚拟按键」面板共用同一份 pref，不产生两套状态。 */
+    private void applyScheme(boolean isGamePad, String[] values, String prefKey, int index) {
+        final Context ctx = getActivity();
+        if (ctx == null || index < 0 || index >= values.length) {
+            return;
+        }
+
+        PreferenceManager.getDefaultSharedPreferences(ctx)
+                .edit()
+                .putString(prefKey, values[index])
+                .commit();
+
+        refreshSchemeBadges();
+
+        // 复用既有刷新链路：重读 pref → 重新加载 axi_<方案>.txt → 立即生效。
+        // 手柄/按键当前为隐藏状态时这里不会做多余的事，下次显示自然用新方案。
+        if (game != null) {
+            game.updateVirtualView();
+        }
+
+        Toast.makeText(ctx, (isGamePad ? "虚拟手柄" : "虚拟按键")
+                + "已切换到方案" + (index + 1), Toast.LENGTH_SHORT).show();
+        dismissSchemePopup();
+    }
+
+    /** 让两个角标始终显示当前生效的方案序号，并跟随手柄/按键的启用状态换底色。 */
+    private void refreshSchemeBadges() {
+        final Context ctx = getActivity();
+        if (ctx == null || badge_game_pad == null || badge_v_keyboard == null) {
+            return;
+        }
+
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
+        final String[] gamePadValues = getResources().getStringArray(R.array.gamepad_axi_values);
+        final String[] keyboardValues = getResources().getStringArray(R.array.keyboard_axi_values);
+
+        final int gamePadIndex = indexOfValue(gamePadValues,
+                prefs.getString(OSC_GAMEPAD_PREFERENCE, OSC_GAMEPAD_PREFERENCE_VALUE));
+        final int keyboardIndex = indexOfValue(keyboardValues,
+                prefs.getString(OSC_PREFERENCE, OSC_PREFERENCE_VALUE));
+
+        badge_game_pad.setSchemeNumber(gamePadIndex + 1);
+        badge_v_keyboard.setSchemeNumber(keyboardIndex + 1);
+
+        badge_game_pad.setActive(game == null || game.prefConfig.onscreenController);
+        badge_v_keyboard.setActive(game == null || game.prefConfig.enableKeyboard);
+    }
+
+    private static int indexOfValue(String[] values, String value) {
+        for (int i = 0; i < values.length; i++) {
+            if (values[i].equals(value)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private int dpToPx(float value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    @Override
+    public void onDestroyView() {
+        // 菜单关闭时一并收掉浮层与未触发的长按计时，避免窗口泄漏
+        cancelSchemeLongPress();
+        dismissSchemePopup();
+        super.onDestroyView();
+    }
+    // EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [NEW] END
 }

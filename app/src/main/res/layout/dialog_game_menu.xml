@@ -222,33 +222,63 @@
             android:layout_margin="5dp"
             android:orientation="horizontal">
 
-            <Button
+            <!-- EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [MODIFIED] BEGIN -->
+            <!-- 外层 FrameLayout 只负责承载右上角的方案角标，Button 的背景 / 权重 / 点击逻辑保持原样。
+                 角标 clickable=false 且完全落在 Button 范围内，触摸会继续下发给 Button，不产生点击死角。 -->
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginRight="5dp"
-                android:layout_weight="1"
-                android:background="@drawable/ic_game_menu_btn_selector"
-                android:drawablePadding="4dp"
-                android:drawableTop="@drawable/ic_axi_game_pad"
-                android:gravity="center"
-                android:padding="4dp"
-                android:id="@+id/btn_game_pad"
-                android:text="虚拟手柄"
-                android:textSize="11dp" />
+                android:layout_weight="1">
 
-            <Button
+                <Button
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/ic_game_menu_btn_selector"
+                    android:drawablePadding="4dp"
+                    android:drawableTop="@drawable/ic_axi_game_pad"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:id="@+id/btn_game_pad"
+                    android:text="虚拟手柄"
+                    android:textSize="11dp" />
+
+                <com.limelight.ui.gamemenu.SchemeBadgeView
+                    android:id="@+id/badge_game_pad"
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginEnd="3dp"
+                    android:layout_marginTop="3dp" />
+            </FrameLayout>
+
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginRight="5dp"
-                android:layout_weight="1"
-                android:background="@drawable/ic_game_menu_btn_selector"
-                android:drawablePadding="4dp"
-                android:drawableTop="@drawable/ic_axi_vkeyboard"
-                android:gravity="center"
-                android:padding="4dp"
-                android:id="@+id/btn_v_keyboard"
-                android:text="虚拟按键"
-                android:textSize="11dp" />
+                android:layout_weight="1">
+
+                <Button
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/ic_game_menu_btn_selector"
+                    android:drawablePadding="4dp"
+                    android:drawableTop="@drawable/ic_axi_vkeyboard"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:id="@+id/btn_v_keyboard"
+                    android:text="虚拟按键"
+                    android:textSize="11dp" />
+
+                <com.limelight.ui.gamemenu.SchemeBadgeView
+                    android:id="@+id/badge_v_keyboard"
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginEnd="3dp"
+                    android:layout_marginTop="3dp" />
+            </FrameLayout>
+            <!-- EXTENSION DEVELOPMENT [EXT-OSC-SCHEME-LONGPRESS] [MODIFIED] END -->
 
             <Button
                 android:layout_width="match_parent"
